@@ -1,3 +1,6 @@
 [submodule "oss-fuzz"]
 	path = oss-fuzz
 	url = https://github.com/google/oss-fuzz.git
+[submodule "truck-factor"]
+	path = truck-factor
+	url = https://github.com/aserg-ufmg/truck-factor
