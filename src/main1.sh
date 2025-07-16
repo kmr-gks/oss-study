@@ -5,6 +5,9 @@
 #ファイルがある場所をカレントディレクトリに設定
 cd "$(dirname "$0")"
 
+# 出力先を指定
+exec > ../output/oss-fuzz-projects.txt
+
 cd ../oss-fuzz/projects
 
 # 各サブディレクトリをループして project.yaml から main_repo を抽出

@@ -12,6 +12,10 @@ oss_list=(
 
 #ファイルがある場所をカレントディレクトリに設定
 cd "$(dirname "$0")"
+
+# 出力先を指定
+exec > ../output/truck-factor-results.txt
+
 cd ../truck-factor/gittruckfactor
 mvn package
 
