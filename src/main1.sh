@@ -16,6 +16,10 @@ for dir in */; do
 	#yamlファイル内にmain_repo: が存在する場合、そのURLを表示する
 	if [ -f "$yaml" ]; then
 	url=$(grep '^main_repo:' "$yaml" | awk '{print $2}')
-	echo $url
+	#'や"で囲まれている場合はそれを除去
+	url=$(echo "$url" | sed -e 's/^["'\'']//;s/["'\'']$//')
+	#拡張子が .git の場合は除去
+	url=$(echo "$url" | sed 's/\.git$//')
+	echo "$url"
 	fi
 done

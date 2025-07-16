@@ -3,12 +3,11 @@
 # ossをクローンする
 # truck-factorを使用してコア開発者情報を抽出する
 
-oss_list=(
-"https://github.com/abseil/abseil-py"
-#"https://github.com/ada-url/ada.git"
-#"https://github.com/AzureAD/azure-activedirectory-library-for-python"
-#"https://github.com/aio-libs/aiohttp"
-)
+#ossのリストをファイルから読み込む
+oss_list=()
+while IFS= read -r line; do
+	oss_list+=("$line")
+done < ../output/oss-fuzz-projects.txt
 
 #ファイルがある場所をカレントディレクトリに設定
 cd "$(dirname "$0")"
