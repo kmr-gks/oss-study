@@ -14,6 +14,7 @@ cd "$(dirname "$0")"
 
 # 出力先を指定
 exec > ../output/truck-factor-results.txt
+exec 2> ../output/truck-factor-errors.txt
 
 cd ../truck-factor/gittruckfactor
 mvn package

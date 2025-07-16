@@ -6,6 +6,7 @@
 cd "$(dirname "$0")"
 
 # 出力先を指定
+mkdir -p ../output
 exec > ../output/oss-fuzz-projects.txt
 
 cd ../oss-fuzz/projects
