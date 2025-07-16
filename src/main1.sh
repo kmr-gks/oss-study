@@ -21,6 +21,8 @@ for dir in */; do
 	url=$(echo "$url" | sed -e 's/^["'\'']//;s/["'\'']$//')
 	#拡張子が .git の場合は除去
 	url=$(echo "$url" | sed 's/\.git$//')
-	echo "$url"
+	#urlが"https://github.com/"で始まる場合のみ表示
+	if [[ "$url" == https://github.com/* ]]; then
+		echo "$url"
 	fi
 done
