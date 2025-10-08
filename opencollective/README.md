@@ -2,6 +2,14 @@
 
 OpenCollectiveのAPIを利用して、オープンソースプロジェクトの財務データを収集・分析する。
 
+## 環境構築
+
+* postgreSQLのインストール(path登録も行う)
+
+```bash
+psql -U postgres -f sqlsetup.sql
+```
+
 ## ファイル構成
 
 api-key.txt - OpenCollectiveのAPIキーを保存するテキストファイル。
