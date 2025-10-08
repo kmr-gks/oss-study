@@ -1,10 +1,15 @@
-#!/bin/bash
+from api import *
 
-#api-key.txtから読み込む
-MY_TOKEN=$(cat api-key.txt)
+query = """
+query {
+	accounts(limit: 1, offset: 0, type: [PROJECT]) {
+		totalCount
+	}
+}
+"""
 
-#プロジェクトの個数を数える
-curl https://api.opencollective.com/graphql/v2 \
-	-H "Content-Type: application/json" \
-	-H "Personal-Token: $MY_TOKEN" \
-	-d '{"query":"query{ accounts(limit:1, offset:0, type:[PROJECT]){ totalCount } }"}'
+# 実行
+result = run_query(query)
+
+# 生のJSONを整形して表示
+show_json(result)
