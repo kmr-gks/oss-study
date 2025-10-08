@@ -7,10 +7,10 @@ OpenCollectiveのAPIを利用して、オープンソースプロジェクトの
 api-key.txt - OpenCollectiveのAPIキーを保存するテキストファイル。
 設定の開発者向けにあるパーソナルトークンを使用してください。
 
-`my-account.sh`
+`my-account.py`
 
-OpenCollectiveのAPIを利用して、自分のアカウント情報を取得するシェルスクリプト。
+OpenCollectiveのAPIを利用して、自分のアカウント情報を取得する。
 
-`project-counter.sh`
+`project-counter.py`
 
-OpenCollectiveのAPIを利用して、すべてのプロジェクトの数をカウントするシェルスクリプト。
+OpenCollectiveのAPIを利用して、すべてのプロジェクトの数をカウントする。
