@@ -14,3 +14,7 @@ OpenCollectiveのAPIを利用して、自分のアカウント情報を取得す
 `project-counter.py`
 
 OpenCollectiveのAPIを利用して、すべてのプロジェクトの数をカウントする。
+
+'get-balance.py'
+
+OpenCollectiveのAPIを利用して、特定のプロジェクトの残高などの情報を取得する。
