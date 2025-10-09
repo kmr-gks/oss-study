@@ -28,4 +28,15 @@ CREATE TABLE IF NOT EXISTS projects (
 CREATE INDEX IF NOT EXISTS idx_projects_slug ON projects(slug);
 CREATE INDEX IF NOT EXISTS idx_projects_created_at ON projects(created_at);
 
+-- 既存のテーブルに新しい列を追加
+ALTER TABLE projects
+  ADD COLUMN IF NOT EXISTS monthly_spending_value NUMERIC,
+  ADD COLUMN IF NOT EXISTS monthly_spending_currency TEXT,
+  ADD COLUMN IF NOT EXISTS total_paid_expenses_value NUMERIC,
+  ADD COLUMN IF NOT EXISTS total_paid_expenses_currency TEXT,
+  ADD COLUMN IF NOT EXISTS managed_amount_value NUMERIC,
+  ADD COLUMN IF NOT EXISTS managed_amount_currency TEXT,
+  ADD COLUMN IF NOT EXISTS contributors_count INT,
+  ADD COLUMN IF NOT EXISTS contributions_count INT;
+
 \echo 'Table "projects" created successfully.'

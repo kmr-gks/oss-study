@@ -18,6 +18,11 @@ query ($limit: Int!, $offset: Int!) {
         totalAmountReceived { value currency }
         totalAmountSpent { value currency }
         yearlyBudget { value currency }
+        monthlySpending { value currency }
+        totalPaidExpenses { value currency }
+        managedAmount { value currency }
+        contributorsCount
+        contributionsCount
       }
     }
   }
@@ -54,6 +59,11 @@ while offset < total:
         total_recv = stats.get("totalAmountReceived", {})
         total_spent = stats.get("totalAmountSpent", {})
         yearly = stats.get("yearlyBudget", {})
+        monthly_spending = stats.get("monthlySpending", {})
+        total_paid_expenses = stats.get("totalPaidExpenses", {})
+        managed_amount = stats.get("managedAmount", {}) or {}
+        contributors_count = stats.get("contributorsCount")
+        contributions_count = stats.get("contributionsCount")
 
         cur.execute("""
             INSERT INTO projects VALUES (
@@ -62,7 +72,11 @@ while offset < total:
                 %(balance_value)s, %(balance_currency)s,
                 %(total_received_value)s, %(total_received_currency)s,
                 %(total_spent_value)s, %(total_spent_currency)s,
-                %(yearly_budget_value)s, %(yearly_budget_currency)s
+                %(yearly_budget_value)s, %(yearly_budget_currency)s,
+                %(monthly_spending_value)s, %(monthly_spending_currency)s,
+                %(total_paid_expenses_value)s, %(total_paid_expenses_currency)s,
+                %(managed_amount_value)s, %(managed_amount_currency)s,
+                %(contributors_count)s, %(contributions_count)s
             )
             ON CONFLICT (id) DO NOTHING;
         """, {
@@ -80,6 +94,14 @@ while offset < total:
             "total_spent_currency": total_spent.get("currency"),
             "yearly_budget_value": yearly.get("value"),
             "yearly_budget_currency": yearly.get("currency"),
+            "monthly_spending_value": monthly_spending.get("value"),
+            "monthly_spending_currency": monthly_spending.get("currency"),
+            "total_paid_expenses_value": total_paid_expenses.get("value"),
+            "total_paid_expenses_currency": total_paid_expenses.get("currency"),
+            "managed_amount_value": managed_amount.get("value"),
+            "managed_amount_currency": managed_amount.get("currency"),
+            "contributors_count": contributors_count,
+            "contributions_count": contributions_count,
         })
 
     conn.commit()
