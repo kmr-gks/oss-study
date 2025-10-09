@@ -23,6 +23,10 @@ OpenCollectiveのAPIを利用して、自分のアカウント情報を取得す
 
 OpenCollectiveのAPIを利用して、すべてのプロジェクトの数をカウントする。
 
-'get-balance.py'
+`get-balance.py'
 
 OpenCollectiveのAPIを利用して、特定のプロジェクトの残高などの情報を取得する。
+
+`save_project_data.py`
+
+OpenCollectiveのAPIを利用して、特定のプロジェクトの財務データをPostgreSQLデータベースに保存する。
