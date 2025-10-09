@@ -23,6 +23,10 @@ OpenCollectiveのAPIを利用して、自分のアカウント情報を取得す
 
 OpenCollectiveのAPIを利用して、すべてのプロジェクトの数をカウントする。
 
+`schema-check.py`
+
+OpenCollectiveのAPIを利用して、プロジェクト(Account型)のスキーマ情報を取得し、表示する。
+
 `get-balance.py`
 
 OpenCollectiveのAPIを利用して、特定のプロジェクトの残高などの情報を取得する。
