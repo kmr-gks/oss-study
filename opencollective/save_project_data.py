@@ -1,8 +1,8 @@
 import psycopg2
 from api import run_query
-import json
+import time
 
-# ====== GraphQLクエリ ======
+# ===== GraphQLクエリ =====
 query = """
 query ($limit: Int!, $offset: Int!) {
   accounts(type:[PROJECT], limit:$limit, offset:$offset) {
@@ -24,57 +24,72 @@ query ($limit: Int!, $offset: Int!) {
 }
 """
 
-# ====== GraphQLからデータ取得 ======
-variables = {"limit": 3, "offset": 0}
-result = run_query(query, variables)
-
-# 結果をパース
-node = result["data"]["accounts"]["nodes"][0]
-stats = node.get("stats", {})
-balance = stats.get("balance", {})
-total_recv = stats.get("totalAmountReceived", {})
-total_spent = stats.get("totalAmountSpent", {})
-yearly = stats.get("yearlyBudget", {})
-
-# ====== PostgreSQLへ接続 ======
+# ===== PostgreSQL接続 =====
 conn = psycopg2.connect(
     host="localhost",
-    dbname="opencollective",
-    user="postgres",       # ←あなたのユーザー名に変更
-    password="password"  # ←あなたのパスワードに変更
+    dbname="opencollective",     # ← 作成したDB名
+    user="postgres",             # ← あなたのPostgreSQLユーザー
+    password="password"     # ← あなたのパスワード
 )
 cur = conn.cursor()
 
-# ====== データ挿入 ======
-cur.execute("""
-    INSERT INTO projects VALUES (
-        %(id)s, %(slug)s, %(name)s, %(type)s,
-        %(created_at)s, %(is_active)s,
-        %(balance_value)s, %(balance_currency)s,
-        %(total_received_value)s, %(total_received_currency)s,
-        %(total_spent_value)s, %(total_spent_currency)s,
-        %(yearly_budget_value)s, %(yearly_budget_currency)s
-    )
-    ON CONFLICT (id) DO NOTHING;
-""", {
-    "id": node.get("id"),
-    "slug": node.get("slug"),
-    "name": node.get("name"),
-    "type": node.get("type"),
-    "created_at": node.get("createdAt"),
-    "is_active": node.get("isActive"),
-    "balance_value": balance.get("value"),
-    "balance_currency": balance.get("currency"),
-    "total_received_value": total_recv.get("value"),
-    "total_received_currency": total_recv.get("currency"),
-    "total_spent_value": total_spent.get("value"),
-    "total_spent_currency": total_spent.get("currency"),
-    "yearly_budget_value": yearly.get("value"),
-    "yearly_budget_currency": yearly.get("currency"),
-})
+# ===== ページネーション設定 =====
+limit = 100
+offset = 0
+total = 5547
 
-conn.commit()
+# ===== データ収集ループ =====
+while offset < total:
+    print(f"Fetching projects {offset} ~ {offset + limit - 1} ...")
+    variables = {"limit": limit, "offset": offset}
+    result = run_query(query, variables)
+
+    # 取得データ
+    nodes = result["data"]["accounts"]["nodes"]
+    print(f"  → {len(nodes)} records fetched")
+
+    for node in nodes:
+        stats = node.get("stats", {})
+        balance = stats.get("balance", {})
+        total_recv = stats.get("totalAmountReceived", {})
+        total_spent = stats.get("totalAmountSpent", {})
+        yearly = stats.get("yearlyBudget", {})
+
+        cur.execute("""
+            INSERT INTO projects VALUES (
+                %(id)s, %(slug)s, %(name)s, %(type)s,
+                %(created_at)s, %(is_active)s,
+                %(balance_value)s, %(balance_currency)s,
+                %(total_received_value)s, %(total_received_currency)s,
+                %(total_spent_value)s, %(total_spent_currency)s,
+                %(yearly_budget_value)s, %(yearly_budget_currency)s
+            )
+            ON CONFLICT (id) DO NOTHING;
+        """, {
+            "id": node.get("id"),
+            "slug": node.get("slug"),
+            "name": node.get("name"),
+            "type": node.get("type"),
+            "created_at": node.get("createdAt"),
+            "is_active": node.get("isActive"),
+            "balance_value": balance.get("value"),
+            "balance_currency": balance.get("currency"),
+            "total_received_value": total_recv.get("value"),
+            "total_received_currency": total_recv.get("currency"),
+            "total_spent_value": total_spent.get("value"),
+            "total_spent_currency": total_spent.get("currency"),
+            "yearly_budget_value": yearly.get("value"),
+            "yearly_budget_currency": yearly.get("currency"),
+        })
+
+    conn.commit()
+    print(f"✅ Inserted {len(nodes)} records (offset={offset})")
+
+    offset += limit
+    time.sleep(1)  # API負荷を避けるため1秒待機
+
+# ===== 終了処理 =====
 cur.close()
 conn.close()
 
-print("✅ 1件のプロジェクトデータを挿入しました。")
+print("🎉 All projects inserted successfully!")
