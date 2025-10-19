@@ -1,0 +1,644 @@
+
+query ($slug: String!) {
+  account(slug: $slug) {
+    transactions(limit: 3) {
+      nodes {
+        hostCurrencyFxRate
+        hostFee {
+          exchangeRate {
+
+          }
+        }
+        paymentProcessorFee {
+          exchangeRate {
+
+          }
+        }
+        paymentProcessorUrl
+        expense {
+          amountV2 {
+            exchangeRate {
+
+            }
+          }
+          accountingCategory {
+
+          }
+          valuesByRole {
+            submitter {
+              accountingCategory {
+
+              }
+            }
+            accountAdmin {
+              accountingCategory {
+
+              }
+            }
+            hostAdmin {
+              accountingCategory {
+
+              }
+            }
+            prediction {
+              accountingCategory {
+
+              }
+            }
+          }
+          payoutMethod {
+
+          }
+          paymentMethod {
+            sourcePaymentMethod {
+              # (循環参照省略: PaymentMethod)
+            }
+            monthlyLimit {
+              exchangeRate {
+
+              }
+            }
+            orders(limit: 3) {
+              nodes {
+                taxAmount {
+                  exchangeRate {
+
+                  }
+                }
+                paymentMethod {
+                  # (循環参照省略: PaymentMethod)
+                }
+                paymentProcessorUrl
+                paymentProcessorFee {
+                  exchangeRate {
+
+                  }
+                }
+                platformTipAmount {
+                  exchangeRate {
+
+                  }
+                }
+                accountingCategory {
+
+                }
+                pendingContributionData {
+                  paymentMethod
+                }
+                transactionImportRow {
+                  expense {
+                    # (循環参照省略: Expense)
+                  }
+                  accountId
+                  order {
+                    # (循環参照省略: Order)
+                  }
+                }
+              }
+            }
+          }
+          quote {
+
+          }
+          recurringExpense {
+            lastExpenseCreated {
+              # (循環参照省略: Expense)
+            }
+          }
+          transactionImportRow {
+            expense {
+              # (循環参照省略: Expense)
+            }
+            accountId
+            order {
+              taxAmount {
+                exchangeRate {
+
+                }
+              }
+              paymentMethod {
+                sourcePaymentMethod {
+                  # (循環参照省略: PaymentMethod)
+                }
+                monthlyLimit {
+                  exchangeRate {
+
+                  }
+                }
+                orders(limit: 3) {
+                  nodes {
+                    # (循環参照省略: Order)
+                  }
+                }
+              }
+              paymentProcessorUrl
+              paymentProcessorFee {
+                exchangeRate {
+
+                }
+              }
+              platformTipAmount {
+                exchangeRate {
+
+                }
+              }
+              accountingCategory {
+
+              }
+              pendingContributionData {
+                paymentMethod
+              }
+              transactionImportRow {
+                # (循環参照省略: TransactionsImportRow)
+              }
+            }
+          }
+        }
+        order {
+          taxAmount {
+            exchangeRate {
+
+            }
+          }
+          paymentMethod {
+            sourcePaymentMethod {
+              # (循環参照省略: PaymentMethod)
+            }
+            monthlyLimit {
+              exchangeRate {
+
+              }
+            }
+            orders(limit: 3) {
+              nodes {
+                # (循環参照省略: Order)
+              }
+            }
+          }
+          paymentProcessorUrl
+          paymentProcessorFee {
+            exchangeRate {
+
+            }
+          }
+          platformTipAmount {
+            exchangeRate {
+
+            }
+          }
+          accountingCategory {
+
+          }
+          pendingContributionData {
+            paymentMethod
+          }
+          transactionImportRow {
+            expense {
+              amountV2 {
+                exchangeRate {
+
+                }
+              }
+              accountingCategory {
+
+              }
+              valuesByRole {
+                submitter {
+                  accountingCategory {
+
+                  }
+                }
+                accountAdmin {
+                  accountingCategory {
+
+                  }
+                }
+                hostAdmin {
+                  accountingCategory {
+
+                  }
+                }
+                prediction {
+                  accountingCategory {
+
+                  }
+                }
+              }
+              payoutMethod {
+
+              }
+              paymentMethod {
+                sourcePaymentMethod {
+                  # (循環参照省略: PaymentMethod)
+                }
+                monthlyLimit {
+                  exchangeRate {
+
+                  }
+                }
+                orders(limit: 3) {
+                  nodes {
+                    # (循環参照省略: Order)
+                  }
+                }
+              }
+              quote {
+
+              }
+              recurringExpense {
+                lastExpenseCreated {
+                  # (循環参照省略: Expense)
+                }
+              }
+              transactionImportRow {
+                # (循環参照省略: TransactionsImportRow)
+              }
+            }
+            accountId
+            order {
+              # (循環参照省略: Order)
+            }
+          }
+        }
+        paymentMethod {
+          sourcePaymentMethod {
+            # (循環参照省略: PaymentMethod)
+          }
+          monthlyLimit {
+            exchangeRate {
+
+            }
+          }
+          orders(limit: 3) {
+            nodes {
+              taxAmount {
+                exchangeRate {
+
+                }
+              }
+              paymentMethod {
+                # (循環参照省略: PaymentMethod)
+              }
+              paymentProcessorUrl
+              paymentProcessorFee {
+                exchangeRate {
+
+                }
+              }
+              platformTipAmount {
+                exchangeRate {
+
+                }
+              }
+              accountingCategory {
+
+              }
+              pendingContributionData {
+                paymentMethod
+              }
+              transactionImportRow {
+                expense {
+                  amountV2 {
+                    exchangeRate {
+
+                    }
+                  }
+                  accountingCategory {
+
+                  }
+                  valuesByRole {
+                    submitter {
+                      accountingCategory {
+
+                      }
+                    }
+                    accountAdmin {
+                      accountingCategory {
+
+                      }
+                    }
+                    hostAdmin {
+                      accountingCategory {
+
+                      }
+                    }
+                    prediction {
+                      accountingCategory {
+
+                      }
+                    }
+                  }
+                  payoutMethod {
+
+                  }
+                  paymentMethod {
+                    # (循環参照省略: PaymentMethod)
+                  }
+                  quote {
+
+                  }
+                  recurringExpense {
+                    lastExpenseCreated {
+                      # (循環参照省略: Expense)
+                    }
+                  }
+                  transactionImportRow {
+                    # (循環参照省略: TransactionsImportRow)
+                  }
+                }
+                accountId
+                order {
+                  # (循環参照省略: Order)
+                }
+              }
+            }
+          }
+        }
+        payoutMethod {
+
+        }
+        balanceInHostCurrency {
+          exchangeRate {
+
+          }
+        }
+      }
+    }
+    orders(limit: 3) {
+      nodes {
+        taxAmount {
+          exchangeRate {
+
+          }
+        }
+        paymentMethod {
+          sourcePaymentMethod {
+            # (循環参照省略: PaymentMethod)
+          }
+          monthlyLimit {
+            exchangeRate {
+
+            }
+          }
+          orders(limit: 3) {
+            nodes {
+              # (循環参照省略: Order)
+            }
+          }
+        }
+        paymentProcessorUrl
+        paymentProcessorFee {
+          exchangeRate {
+
+          }
+        }
+        platformTipAmount {
+          exchangeRate {
+
+          }
+        }
+        accountingCategory {
+
+        }
+        pendingContributionData {
+          paymentMethod
+        }
+        transactionImportRow {
+          expense {
+            amountV2 {
+              exchangeRate {
+
+              }
+            }
+            accountingCategory {
+
+            }
+            valuesByRole {
+              submitter {
+                accountingCategory {
+
+                }
+              }
+              accountAdmin {
+                accountingCategory {
+
+                }
+              }
+              hostAdmin {
+                accountingCategory {
+
+                }
+              }
+              prediction {
+                accountingCategory {
+
+                }
+              }
+            }
+            payoutMethod {
+
+            }
+            paymentMethod {
+              sourcePaymentMethod {
+                # (循環参照省略: PaymentMethod)
+              }
+              monthlyLimit {
+                exchangeRate {
+
+                }
+              }
+              orders(limit: 3) {
+                nodes {
+                  # (循環参照省略: Order)
+                }
+              }
+            }
+            quote {
+
+            }
+            recurringExpense {
+              lastExpenseCreated {
+                # (循環参照省略: Expense)
+              }
+            }
+            transactionImportRow {
+              # (循環参照省略: TransactionsImportRow)
+            }
+          }
+          accountId
+          order {
+            # (循環参照省略: Order)
+          }
+        }
+      }
+    }
+    expenses(limit: 3) {
+      nodes {
+        amountV2 {
+          exchangeRate {
+
+          }
+        }
+        accountingCategory {
+
+        }
+        valuesByRole {
+          submitter {
+            accountingCategory {
+
+            }
+          }
+          accountAdmin {
+            accountingCategory {
+
+            }
+          }
+          hostAdmin {
+            accountingCategory {
+
+            }
+          }
+          prediction {
+            accountingCategory {
+
+            }
+          }
+        }
+        payoutMethod {
+
+        }
+        paymentMethod {
+          sourcePaymentMethod {
+            # (循環参照省略: PaymentMethod)
+          }
+          monthlyLimit {
+            exchangeRate {
+
+            }
+          }
+          orders(limit: 3) {
+            nodes {
+              taxAmount {
+                exchangeRate {
+
+                }
+              }
+              paymentMethod {
+                # (循環参照省略: PaymentMethod)
+              }
+              paymentProcessorUrl
+              paymentProcessorFee {
+                exchangeRate {
+
+                }
+              }
+              platformTipAmount {
+                exchangeRate {
+
+                }
+              }
+              accountingCategory {
+
+              }
+              pendingContributionData {
+                paymentMethod
+              }
+              transactionImportRow {
+                expense {
+                  # (循環参照省略: Expense)
+                }
+                accountId
+                order {
+                  # (循環参照省略: Order)
+                }
+              }
+            }
+          }
+        }
+        quote {
+
+        }
+        recurringExpense {
+          lastExpenseCreated {
+            # (循環参照省略: Expense)
+          }
+        }
+        transactionImportRow {
+          expense {
+            # (循環参照省略: Expense)
+          }
+          accountId
+          order {
+            taxAmount {
+              exchangeRate {
+
+              }
+            }
+            paymentMethod {
+              sourcePaymentMethod {
+                # (循環参照省略: PaymentMethod)
+              }
+              monthlyLimit {
+                exchangeRate {
+
+                }
+              }
+              orders(limit: 3) {
+                nodes {
+                  # (循環参照省略: Order)
+                }
+              }
+            }
+            paymentProcessorUrl
+            paymentProcessorFee {
+              exchangeRate {
+
+              }
+            }
+            platformTipAmount {
+              exchangeRate {
+
+              }
+            }
+            accountingCategory {
+
+            }
+            pendingContributionData {
+              paymentMethod
+            }
+            transactionImportRow {
+              # (循環参照省略: TransactionsImportRow)
+            }
+          }
+        }
+      }
+    }
+    stats {
+      managedAmount {
+        exchangeRate {
+
+        }
+      }
+    }
+    virtualCardMerchants(limit: 3) {
+      nodes {
+        # (循環参照省略: Account)
+      }
+    }
+    childrenAccounts(limit: 3) {
+      nodes {
+        # (循環参照省略: Account)
+      }
+    }
+    duplicatedAccounts(limit: 3) {
+      nodes {
+        # (循環参照省略: Account)
+      }
+    }
+    transactionGroups(limit: 3) {
+      nodes {
+
+      }
+    }
+  }
+}
