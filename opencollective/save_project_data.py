@@ -1,6 +1,8 @@
 import psycopg2
 from api import run_query
 import time
+import csv
+import os
 
 # ===== GraphQLクエリ =====
 query = """
@@ -39,6 +41,29 @@ conn = psycopg2.connect(
 )
 cur = conn.cursor()
 
+# ===== CSV準備 =====
+csv_filename = "projects_data.csv"
+file_exists = os.path.isfile(csv_filename)
+
+csv_fields = [
+    "id", "slug", "name", "type", "created_at", "is_active", "stats_id",
+    "balance_value", "balance_currency",
+    "total_received_value", "total_received_currency",
+    "total_spent_value", "total_spent_currency",
+    "yearly_budget_value", "yearly_budget_currency",
+    "monthly_spending_value", "monthly_spending_currency",
+    "total_paid_expenses_value", "total_paid_expenses_currency",
+    "managed_amount_value", "managed_amount_currency",
+    "contributors_count", "contributions_count"
+]
+
+csv_file = open(csv_filename, mode="a", newline="", encoding="utf-8")
+csv_writer = csv.DictWriter(csv_file, fieldnames=csv_fields)
+
+# ファイルが存在しなければヘッダーを書き込む
+if not file_exists:
+    csv_writer.writeheader()
+
 # ===== ページネーション設定 =====
 limit = 100
 offset = 0
@@ -66,23 +91,7 @@ while offset < total:
         managed_amount = stats.get("managedAmount", {}) or {}
         contributors_count = stats.get("contributorsCount")
         contributions_count = stats.get("contributionsCount")
-
-        cur.execute("""
-            INSERT INTO projects VALUES (
-                %(id)s, %(slug)s, %(name)s, %(type)s,
-                %(created_at)s, %(is_active)s,
-                %(stats_id)s,
-                %(balance_value)s, %(balance_currency)s,
-                %(total_received_value)s, %(total_received_currency)s,
-                %(total_spent_value)s, %(total_spent_currency)s,
-                %(yearly_budget_value)s, %(yearly_budget_currency)s,
-                %(monthly_spending_value)s, %(monthly_spending_currency)s,
-                %(total_paid_expenses_value)s, %(total_paid_expenses_currency)s,
-                %(managed_amount_value)s, %(managed_amount_currency)s,
-                %(contributors_count)s, %(contributions_count)s
-            )
-            ON CONFLICT (id) DO NOTHING;
-        """, {
+        record = {
             "id": node.get("id"),
             "slug": node.get("slug"),
             "name": node.get("name"),
@@ -106,16 +115,38 @@ while offset < total:
             "managed_amount_currency": managed_amount.get("currency"),
             "contributors_count": contributors_count,
             "contributions_count": contributions_count,
-        })
+        }
+
+        # === SQLに挿入 ===
+        cur.execute("""
+            INSERT INTO projects VALUES (
+                %(id)s, %(slug)s, %(name)s, %(type)s,
+                %(created_at)s, %(is_active)s,
+                %(stats_id)s,
+                %(balance_value)s, %(balance_currency)s,
+                %(total_received_value)s, %(total_received_currency)s,
+                %(total_spent_value)s, %(total_spent_currency)s,
+                %(yearly_budget_value)s, %(yearly_budget_currency)s,
+                %(monthly_spending_value)s, %(monthly_spending_currency)s,
+                %(total_paid_expenses_value)s, %(total_paid_expenses_currency)s,
+                %(managed_amount_value)s, %(managed_amount_currency)s,
+                %(contributors_count)s, %(contributions_count)s
+            )
+            ON CONFLICT (id) DO NOTHING;
+        """, record)
+        
+        # === CSVに追記 ===
+        csv_writer.writerow(record)
 
     conn.commit()
-    print(f"✅ Inserted {len(nodes)} records (offset={offset})")
+    print(f"✅ Inserted and saved {len(nodes)} records (offset={offset})")
 
     offset += limit
     time.sleep(1)  # API負荷を避けるため1秒待機
 
 # ===== 終了処理 =====
+csv_file.close()
 cur.close()
 conn.close()
 
-print("🎉 All projects inserted successfully!")
+print("🎉 All projects inserted successfully and saved to CSV!")
