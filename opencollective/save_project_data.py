@@ -14,6 +14,7 @@ query ($limit: Int!, $offset: Int!) {
       createdAt
       isActive
       stats {
+        id
         balance { value currency }
         totalAmountReceived { value currency }
         totalAmountSpent { value currency }
@@ -55,6 +56,7 @@ while offset < total:
 
     for node in nodes:
         stats = node.get("stats", {})
+        stats_id = stats.get("id")
         balance = stats.get("balance", {})
         total_recv = stats.get("totalAmountReceived", {})
         total_spent = stats.get("totalAmountSpent", {})
@@ -69,6 +71,7 @@ while offset < total:
             INSERT INTO projects VALUES (
                 %(id)s, %(slug)s, %(name)s, %(type)s,
                 %(created_at)s, %(is_active)s,
+                %(stats_id)s,
                 %(balance_value)s, %(balance_currency)s,
                 %(total_received_value)s, %(total_received_currency)s,
                 %(total_spent_value)s, %(total_spent_currency)s,
@@ -86,6 +89,7 @@ while offset < total:
             "type": node.get("type"),
             "created_at": node.get("createdAt"),
             "is_active": node.get("isActive"),
+            "stats_id": stats_id,
             "balance_value": balance.get("value"),
             "balance_currency": balance.get("currency"),
             "total_received_value": total_recv.get("value"),

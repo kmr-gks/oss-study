@@ -23,6 +23,7 @@ CREATE TABLE projects (
     is_active BOOLEAN,
 
     -- 財務情報（Amount.valueは小数を扱うのでNUMERIC）
+    stats_id TEXT,
     balance_value NUMERIC,
     balance_currency TEXT,
     total_received_value NUMERIC,
