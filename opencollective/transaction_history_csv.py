@@ -51,7 +51,7 @@ try:
     log("✅ PostgreSQL connected successfully.")
 
     # ===== CSV設定 =====
-    csv_filename = "transactions_data.csv"
+    csv_filename = datetime.datetime.now().strftime("transactions_data_%Y-%m-%d_%H-%M-%S.csv")
     file_exists = os.path.isfile(csv_filename)
 
     csv_fields = [
