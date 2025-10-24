@@ -6,6 +6,7 @@ output/
 *.pdf
 opencollective/__pycache__/
 opencollective/lib/
+opencollective/logs/
 credentials.json
 *.json
 *.html
