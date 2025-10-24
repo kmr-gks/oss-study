@@ -8,3 +8,6 @@ opencollective/__pycache__/
 opencollective/lib/
 credentials.json
 *.json
+*.html
+*.csv
+mining*
