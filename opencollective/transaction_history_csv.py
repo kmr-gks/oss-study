@@ -1,6 +1,7 @@
 import psycopg2
 from api import run_query
 import time
+import datetime
 import csv
 import os
 
@@ -58,7 +59,7 @@ cur.execute("SELECT slug, name FROM projects;")
 projects = cur.fetchall()
 
 for slug, name in projects:
-    print(f"Fetching transactions for {slug} ...")
+    print(f"{datetime.datetime.now()}Fetching transactions for {slug} ...")
 
     limit = 100
     offset = 0
@@ -109,7 +110,7 @@ for slug, name in projects:
             csv_writer.writerow(record)
 
         conn.commit()
-        print(f"✅ Inserted {len(nodes)} transactions for {slug} (offset={offset})")
+        print(f"Inserted {len(nodes)} transactions for {slug} (offset={offset})")
         offset += limit
         time.sleep(0.5)  # API負荷対策
 
