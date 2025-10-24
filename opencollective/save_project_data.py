@@ -1,5 +1,5 @@
 import psycopg2
-from api import run_query
+import api
 import time
 import csv
 import os
@@ -37,7 +37,7 @@ conn = psycopg2.connect(
     host="localhost",
     dbname="opencollective",     # ← 作成したDB名
     user="postgres",             # ← あなたのPostgreSQLユーザー
-    password="password"     # ← あなたのパスワード
+    password=api.load_sql_password_from_credentials()
 )
 cur = conn.cursor()
 
@@ -73,7 +73,7 @@ total = 5547
 while offset < total:
     print(f"Fetching projects {offset} ~ {offset + limit - 1} ...")
     variables = {"limit": limit, "offset": offset}
-    result = run_query(query, variables)
+    result = api.run_query(query, variables)
 
     # 取得データ
     nodes = result["data"]["accounts"]["nodes"]
@@ -134,7 +134,7 @@ while offset < total:
             )
             ON CONFLICT (id) DO NOTHING;
         """, record)
-        
+
         # === CSVに追記 ===
         csv_writer.writerow(record)
 
