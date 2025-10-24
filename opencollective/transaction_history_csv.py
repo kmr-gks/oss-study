@@ -1,5 +1,5 @@
 import psycopg2
-from api import run_query
+import api
 import datetime
 import csv
 import os
@@ -30,7 +30,7 @@ conn = psycopg2.connect(
     host="localhost",
     dbname="opencollective",
     user="postgres",
-    password="fake_password"
+    password=api.load_sql_password_from_credentials()
 )
 cur = conn.cursor()
 
@@ -64,7 +64,7 @@ for slug, name in projects:
     offset = 0
     while True:
         variables = {"slug": slug, "limit": limit, "offset": offset}
-        result = run_query(query, variables)
+        result = api.run_query(query, variables)
         account_data = result.get("data", {}).get("account")
         if not account_data:
             break

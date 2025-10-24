@@ -23,6 +23,26 @@ def load_token_from_credentials(file_path="credentials.json", service="opencolle
 
     return token.strip()
 
+def load_sql_password_from_credentials(file_path="credentials.json", service="postgresql"):
+    """
+    credentials.json からデータベースのパスワードを読み込む。
+    {
+      "postgresql": { "password": "xxxxx" }
+    }
+    の形式を想定。
+    """
+    with open(file_path, "r", encoding="utf-8") as f:
+        creds = json.load(f)
+
+    try:
+        password = creds[service]["password"]
+    except KeyError:
+        raise KeyError(f"credentials.json 内に {service} の password が見つかりません。")
+
+    if not password:
+        raise ValueError(f"{service} の password が空です。")
+
+    return password.strip()
 
 def run_query(query: str, variables: dict = None, credentials_file="credentials.json"):
     """
