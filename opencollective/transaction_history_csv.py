@@ -1,6 +1,5 @@
 import psycopg2
 from api import run_query
-import time
 import datetime
 import csv
 import os
@@ -31,7 +30,7 @@ conn = psycopg2.connect(
     host="localhost",
     dbname="opencollective",
     user="postgres",
-    password="password"
+    password="fake_password"
 )
 cur = conn.cursor()
 
@@ -112,10 +111,9 @@ for slug, name in projects:
         conn.commit()
         print(f"Inserted {len(nodes)} transactions for {slug} (offset={offset})")
         offset += limit
-        time.sleep(0.5)  # API負荷対策
 
 # ===== 終了処理 =====
 csv_file.close()
 cur.close()
 conn.close()
-print("🎉 All transactions inserted into DB and saved to CSV!")
+print("All transactions inserted into DB and saved to CSV!")
