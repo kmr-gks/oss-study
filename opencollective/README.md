@@ -34,3 +34,12 @@ OpenCollectiveのAPIを利用して、特定のプロジェクトの残高など
 `save_project_data.py`
 
 OpenCollectiveのAPIを利用して、特定のプロジェクトの財務データをPostgreSQLデータベースに保存する。
+
+### backup:
+pg_dumpall -U postgres -f ".\logs\pg_all_$(Get-Date -Format yyyyMMdd_HHmm).sql"
+
+### password
+~\AppData\Roaming\postgresql\pgpass.conf
+```
+localhost:5432:*:postgres:your_password
+```
