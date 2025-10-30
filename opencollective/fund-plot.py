@@ -23,18 +23,19 @@ print(df.head())
 print("データ件数:", len(df))
 
 # --- グラフ描画 ---
-if not df.empty:
-    median_value = df["total_amount"].median()
+if df.empty:
+	print("データが存在しません。project_slug または type を確認してください。")
+	exit()
 
-    plt.figure(figsize=(10,5))
-    plt.plot(df["date"], df["total_amount"], marker="o", label="Daily received amount")
-    plt.axhline(y=median_value, color='red', linestyle='--', label=f"Median = {median_value:.2f}")
-    plt.title("Daily Funding Received by {}".format(project_slug))
-    plt.xlabel("Date")
-    plt.ylabel("Amount")
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
-else:
-    print("⚠️ データが存在しません。project_slug または type を確認してください。")
+median_value = df["total_amount"].median()
+plt.figure(figsize=(10,5))
+plt.plot(df["date"], df["total_amount"], marker="o", label="Daily received amount")
+plt.axhline(y=median_value, color='red', linestyle='--', label=f"Median = {median_value:.2f}")
+plt.title("Daily Funding Received by {}".format(project_slug))
+plt.xlabel("Date")
+plt.ylabel("Amount")
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.savefig("figs/funding_plot_{}.png".format(project_slug),dpi=300)
+plt.show()
