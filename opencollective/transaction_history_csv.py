@@ -33,6 +33,14 @@ query ($slug: String!, $limit: Int!, $offset: Int!) {
         amount { value currency }
         fromAccount { slug name }
         toAccount { slug name }
+        expense {
+          description
+          type
+          tags
+        }
+        order {
+          description
+        }
       }
     }
   }
@@ -59,7 +67,9 @@ try:
         "type", "description", "created_at",
         "amount_value", "amount_currency",
         "from_account_slug", "from_account_name",
-        "to_account_slug", "to_account_name"
+        "to_account_slug", "to_account_name",
+        "expense_description", "expense_type", "expense_tags",
+        "order_description"
     ]
 
     csv_file = open(csv_filename, mode="a", newline="", encoding="utf-8")
@@ -101,6 +111,8 @@ try:
                 amount = tx.get("amount", {}) or {}
                 from_acc = tx.get("fromAccount", {}) or {}
                 to_acc = tx.get("toAccount", {}) or {}
+                expense = tx.get("expense", {}) or {}
+                order = tx.get("order", {}) or {}
 
                 record = {
                     "id": tx.get("id"),
@@ -115,6 +127,10 @@ try:
                     "from_account_name": from_acc.get("name"),
                     "to_account_slug": to_acc.get("slug"),
                     "to_account_name": to_acc.get("name"),
+                    "expense_description": expense.get("description"),
+                    "expense_type": expense.get("type"),
+                    "expense_tags": ",".join(expense.get("tags", []) or []),
+                    "order_description": order.get("description"),
                 }
 
                 try:
@@ -125,7 +141,9 @@ try:
                             %(type)s, %(description)s, %(created_at)s,
                             %(amount_value)s, %(amount_currency)s,
                             %(from_account_slug)s, %(from_account_name)s,
-                            %(to_account_slug)s, %(to_account_name)s
+                            %(to_account_slug)s, %(to_account_name)s,
+                            %(expense_description)s, %(expense_type)s,
+                            %(expense_tags)s, %(order_description)s
                         )
                         ON CONFLICT (id) DO NOTHING;
                     """, record)

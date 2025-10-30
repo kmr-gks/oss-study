@@ -11,7 +11,11 @@ CREATE TABLE IF NOT EXISTS transactions (
     from_account_slug TEXT,
     from_account_name TEXT,
     to_account_slug TEXT,
-    to_account_name TEXT
+    to_account_name TEXT,
+    expense_description TEXT,
+    expense_type TEXT,
+    expense_tags TEXT,
+    order_description TEXT
 );
 
 -- 索引（よく使うフィールドに）
