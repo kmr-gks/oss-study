@@ -1,6 +1,7 @@
 import psycopg2
 import api
 import time
+import datetime
 import csv
 import os
 
@@ -23,7 +24,6 @@ query ($limit: Int!, $offset: Int!) {
         yearlyBudget { value currency }
         monthlySpending { value currency }
         totalPaidExpenses { value currency }
-        managedAmount { value currency }
         contributorsCount
         contributionsCount
       }
@@ -42,7 +42,7 @@ conn = psycopg2.connect(
 cur = conn.cursor()
 
 # ===== CSV準備 =====
-csv_filename = "projects_data.csv"
+csv_filename = datetime.datetime.now().strftime("projects_data_%Y-%m-%d_%H-%M-%S.csv")
 file_exists = os.path.isfile(csv_filename)
 
 csv_fields = [
@@ -67,7 +67,7 @@ if not file_exists:
 # ===== ページネーション設定 =====
 limit = 100
 offset = 0
-total = 5547
+total = 6000
 
 # ===== データ収集ループ =====
 while offset < total:
@@ -142,7 +142,6 @@ while offset < total:
     print(f"✅ Inserted and saved {len(nodes)} records (offset={offset})")
 
     offset += limit
-    time.sleep(1)  # API負荷を避けるため1秒待機
 
 # ===== 終了処理 =====
 csv_file.close()
