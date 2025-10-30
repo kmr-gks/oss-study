@@ -10,6 +10,26 @@ OpenCollectiveのAPIを利用して、オープンソースプロジェクトの
 psql -U postgres -f sqlsetup.sql
 ```
 
+## How to run
+credentials.jsonを作成する。
+```json
+{
+	"opencollective": {
+		"api_token": "your_api_token_here"
+	},
+	"postgresql": {
+		"password": "your_postgresql_password_here",
+	}
+}
+
+```
+```PowerShell
+cd opencollective
+python project-counter.py
+python save_project_data.py
+python transaction_history.py
+```
+
 ## ファイル構成
 
 api-key.txt - OpenCollectiveのAPIキーを保存するテキストファイル。
@@ -36,10 +56,13 @@ OpenCollectiveのAPIを利用して、特定のプロジェクトの残高など
 OpenCollectiveのAPIを利用して、特定のプロジェクトの財務データをPostgreSQLデータベースに保存する。
 
 ### backup:
+
 pg_dumpall -U postgres -f ".\logs\pg_all_$(Get-Date -Format yyyyMMdd_HHmm).sql"
 
 ### password
+
 ~\AppData\Roaming\postgresql\pgpass.conf
+
 ```
 localhost:5432:*:postgres:your_password
 ```
