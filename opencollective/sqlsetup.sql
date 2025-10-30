@@ -21,6 +21,10 @@ CREATE TABLE projects (
     type TEXT,
     created_at TIMESTAMP,
     is_active BOOLEAN,
+    website TEXT,
+    github_handle TEXT,
+    twitter_handle TEXT,
+    social_links JSONB,
 
     -- 財務情報（Amount.valueは小数を扱うのでNUMERIC）
     stats_id TEXT,

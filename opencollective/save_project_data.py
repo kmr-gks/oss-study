@@ -1,6 +1,6 @@
 import psycopg2
 import api
-import time
+import json
 import datetime
 import csv
 import os
@@ -16,6 +16,10 @@ query ($limit: Int!, $offset: Int!) {
       type
       createdAt
       isActive
+      website
+      githubHandle
+      twitterHandle
+      socialLinks { type url }
       stats {
         id
         balance { value currency }
@@ -47,6 +51,7 @@ file_exists = os.path.isfile(csv_filename)
 
 csv_fields = [
     "id", "slug", "name", "type", "created_at", "is_active", "stats_id",
+    "website", "github_handle", "twitter_handle", "social_links",
     "balance_value", "balance_currency",
     "total_received_value", "total_received_currency",
     "total_spent_value", "total_spent_currency",
@@ -83,6 +88,10 @@ while offset < total:
         stats = node.get("stats", {})
         stats_id = stats.get("id")
         balance = stats.get("balance", {})
+        website = node.get("website")
+        github_handle = node.get("githubHandle")
+        twitter_handle = node.get("twitterHandle")
+        social_links = json.dumps(node.get("socialLinks", []), ensure_ascii=False)
         total_recv = stats.get("totalAmountReceived", {})
         total_spent = stats.get("totalAmountSpent", {})
         yearly = stats.get("yearlyBudget", {})
@@ -98,6 +107,10 @@ while offset < total:
             "type": node.get("type"),
             "created_at": node.get("createdAt"),
             "is_active": node.get("isActive"),
+            "website": website,
+            "github_handle": github_handle,
+            "twitter_handle": twitter_handle,
+            "social_links": social_links,
             "stats_id": stats_id,
             "balance_value": balance.get("value"),
             "balance_currency": balance.get("currency"),
@@ -122,6 +135,7 @@ while offset < total:
             INSERT INTO projects VALUES (
                 %(id)s, %(slug)s, %(name)s, %(type)s,
                 %(created_at)s, %(is_active)s,
+                %(website)s, %(github_handle)s, %(twitter_handle)s, %(social_links)s,
                 %(stats_id)s,
                 %(balance_value)s, %(balance_currency)s,
                 %(total_received_value)s, %(total_received_currency)s,
