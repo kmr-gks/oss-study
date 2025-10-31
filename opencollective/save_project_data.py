@@ -46,7 +46,7 @@ conn = psycopg2.connect(
 cur = conn.cursor()
 
 # ===== CSV準備 =====
-csv_filename = datetime.datetime.now().strftime("projects_data_%Y-%m-%d_%H-%M-%S.csv")
+csv_filename = datetime.datetime.now().strftime("outputs/projects_data_%Y-%m-%d_%H-%M-%S.csv")
 file_exists = os.path.isfile(csv_filename)
 
 csv_fields = [

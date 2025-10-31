@@ -9,6 +9,7 @@ opencollective/lib/
 opencollective/logs/
 opencollective/figs/
 opencollective/captures
+opencollective/outputs
 credentials.json
 *.json
 *.html
