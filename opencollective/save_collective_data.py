@@ -9,7 +9,7 @@ import time
 # ===== GraphQLクエリ =====
 query = """
 query ($limit: Int!, $offset: Int!) {
-  accounts(host: { slug: "opensource" }, type: [PROJECT], limit: $limit, offset: $offset) {
+  accounts(host: { slug: "opensource" }, limit: $limit, offset: $offset) {
     totalCount
     nodes {
       id
@@ -72,6 +72,7 @@ while True:
     print(f"Fetching collectives {offset} ~ {offset + limit - 1} ...")
     variables = {"limit": limit, "offset": offset}
     result = api.run_query(query, variables)
+    print(f"total: {account_data["totalCount"]}")
 
     account_data = result.get("data", {}).get("accounts")
     if not account_data:
