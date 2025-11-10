@@ -20,6 +20,14 @@ query ($limit: Int!, $offset: Int!) {
       githubHandle
       twitterHandle
       socialLinks { type url }
+      ... on Project {
+        parent {
+          id
+          slug
+          name
+          githubHandle
+        }
+      }
       stats {
         id
         balance { value currency }
@@ -59,7 +67,8 @@ csv_fields = [
     "monthly_spending_value", "monthly_spending_currency",
     "total_paid_expenses_value", "total_paid_expenses_currency",
     "managed_amount_value", "managed_amount_currency",
-    "contributors_count", "contributions_count"
+    "contributors_count", "contributions_count",
+    "parent_id", "parent_slug", "parent_name", "parent_github_handle"
 ]
 
 csv_file = open(csv_filename, mode="a", newline="", encoding="utf-8")
@@ -100,6 +109,7 @@ while offset < total:
         managed_amount = stats.get("managedAmount", {}) or {}
         contributors_count = stats.get("contributorsCount")
         contributions_count = stats.get("contributionsCount")
+        parent = node.get("parent") or {}
         record = {
             "id": node.get("id"),
             "slug": node.get("slug"),
@@ -128,6 +138,10 @@ while offset < total:
             "managed_amount_currency": managed_amount.get("currency"),
             "contributors_count": contributors_count,
             "contributions_count": contributions_count,
+            "parent_id": parent.get("id"),
+            "parent_slug": parent.get("slug"),
+            "parent_name": parent.get("name"),
+            "parent_github_handle": parent.get("githubHandle"),
         }
 
         # === SQLに挿入 ===
@@ -144,9 +158,41 @@ while offset < total:
                 %(monthly_spending_value)s, %(monthly_spending_currency)s,
                 %(total_paid_expenses_value)s, %(total_paid_expenses_currency)s,
                 %(managed_amount_value)s, %(managed_amount_currency)s,
-                %(contributors_count)s, %(contributions_count)s
+                %(contributors_count)s, %(contributions_count)s,
+                %(parent_id)s, %(parent_slug)s, %(parent_name)s, %(parent_github_handle)s
             )
-            ON CONFLICT (id) DO NOTHING;
+            ON CONFLICT (id) DO UPDATE SET
+              slug = EXCLUDED.slug,
+              name = EXCLUDED.name,
+              type = EXCLUDED.type,
+              created_at = EXCLUDED.created_at,
+              is_active = EXCLUDED.is_active,
+              website = EXCLUDED.website,
+              github_handle = EXCLUDED.github_handle,
+              twitter_handle = EXCLUDED.twitter_handle,
+              social_links = EXCLUDED.social_links,
+              stats_id = EXCLUDED.stats_id,
+              balance_value = EXCLUDED.balance_value,
+              balance_currency = EXCLUDED.balance_currency,
+              total_received_value = EXCLUDED.total_received_value,
+              total_received_currency = EXCLUDED.total_received_currency,
+              total_spent_value = EXCLUDED.total_spent_value,
+              total_spent_currency = EXCLUDED.total_spent_currency,
+              yearly_budget_value = EXCLUDED.yearly_budget_value,
+              yearly_budget_currency = EXCLUDED.yearly_budget_currency,
+              monthly_spending_value = EXCLUDED.monthly_spending_value,
+              monthly_spending_currency = EXCLUDED.monthly_spending_currency,
+              total_paid_expenses_value = EXCLUDED.total_paid_expenses_value,
+              total_paid_expenses_currency = EXCLUDED.total_paid_expenses_currency,
+              managed_amount_value = EXCLUDED.managed_amount_value,
+              managed_amount_currency = EXCLUDED.managed_amount_currency,
+              contributors_count = EXCLUDED.contributors_count,
+              contributions_count = EXCLUDED.contributions_count,
+              parent_id = EXCLUDED.parent_id,
+              parent_slug = EXCLUDED.parent_slug,
+              parent_name = EXCLUDED.parent_name,
+              parent_github_handle = EXCLUDED.parent_github_handle
+                    ;
         """, record)
 
         # === CSVに追記 ===

@@ -2,15 +2,11 @@
 --    この部分は "postgres" データベースで実行してください。
 CREATE DATABASE opencollective;
 
--- 1. データベース作成（存在しない場合のみ）
---    ※この部分は "postgres" データベース上で実行してください。
-CREATE DATABASE opencollective;
-
 -- 2. 対象DBに接続
 \connect opencollective
 
 -- 3. テーブル作成
---    予算関連・活動統計を含む最新仕様に対応
+--    親Collective情報を含む最新版
 DROP TABLE IF EXISTS projects;
 
 CREATE TABLE projects (
@@ -48,11 +44,18 @@ CREATE TABLE projects (
     -- 寄付統計
     contributors_count INT,
     contributions_count INT
+
+    -- 親Collective情報
+    parent_id TEXT,
+    parent_slug TEXT,
+    parent_name TEXT,
+    parent_github_handle TEXT,
 );
 
 -- 4. インデックス作成（検索高速化）
 CREATE INDEX IF NOT EXISTS idx_projects_slug ON projects(slug);
 CREATE INDEX IF NOT EXISTS idx_projects_created_at ON projects(created_at);
 CREATE INDEX IF NOT EXISTS idx_projects_balance_value ON projects(balance_value);
+CREATE INDEX IF NOT EXISTS idx_projects_parent_slug ON projects(parent_slug);
 
-\echo '✅ Table "projects" created successfully (NUMERIC型対応)'
+\echo '✅ Table "projects" (with parent info) created successfully'
