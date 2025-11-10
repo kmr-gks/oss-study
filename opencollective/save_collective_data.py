@@ -9,26 +9,25 @@ import time
 # ===== GraphQLクエリ =====
 query = """
 query ($limit: Int!, $offset: Int!) {
-  account(slug: "opensource") {
-    childrenAccounts(limit: $limit, offset: $offset) {
-      nodes {
-        id
-        slug
-        name
-        type
-        createdAt
-        isActive
-        description
-        website
-        githubHandle
-        twitterHandle
-        socialLinks { type url }
-        stats {
-          balance { value currency }
-          totalAmountReceived { value currency }
-          totalAmountSpent { value currency }
-          yearlyBudget { value currency }
-        }
+  accounts(host: { slug: "opensource" }, type: [PROJECT], limit: $limit, offset: $offset) {
+    totalCount
+    nodes {
+      id
+      slug
+      name
+      type
+      createdAt
+      isActive
+      description
+      website
+      githubHandle
+      twitterHandle
+      socialLinks { type url }
+      stats {
+        balance { value currency }
+        totalAmountReceived { value currency }
+        totalAmountSpent { value currency }
+        yearlyBudget { value currency }
       }
     }
   }
@@ -74,12 +73,12 @@ while True:
     variables = {"limit": limit, "offset": offset}
     result = api.run_query(query, variables)
 
-    account_data = result.get("data", {}).get("account")
+    account_data = result.get("data", {}).get("accounts")
     if not account_data:
         print("No account data found — stopping.")
         break
 
-    nodes = account_data["childrenAccounts"]["nodes"]
+    nodes = account_data["nodes"]
     if not nodes:
         print("No more nodes — done.")
         break
