@@ -30,7 +30,7 @@ query ($slug: String!, $limit: Int!, $offset: Int!) {
         status
         createdAt
         incurredAt
-        amount { value currency }
+        amountV2 { valueInCents value currency }
         tags
         payee { slug name }
       }
@@ -62,7 +62,7 @@ with open(csv_filename, mode="w", newline="", encoding="utf-8") as csv_file:
     writer.writeheader()
 
     # ===== プロジェクト一覧を取得 =====
-    cur.execute("SELECT slug, name FROM projects;")
+    cur.execute("SELECT slug, name FROM collectives;")
     projects = cur.fetchall()
     log(f"✅ Loaded {len(projects)} collectives from database")
 
@@ -85,7 +85,7 @@ with open(csv_filename, mode="w", newline="", encoding="utf-8") as csv_file:
                     break
 
                 for e in expenses:
-                    amount = e.get("amount", {}) or {}
+                    amount = e.get("amountV2", {}) or {}
                     payee = e.get("payee", {}) or {}
                     tags_json = json.dumps(e.get("tags", []), ensure_ascii=False)
 
