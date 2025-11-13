@@ -50,7 +50,7 @@ def run_query(query: str, variables: dict = None, credentials_file="credentials.
     失敗時には一定時間待ってリトライ（指数バックオフ）を行う。
     それでもエラーが発生するときは空のJSONを返す。
     """
-    max_retries=10
+    max_retries=5
     backoff_base=2.0
     url = "https://api.opencollective.com/graphql/v2"
     token = load_token_from_credentials(credentials_file)
