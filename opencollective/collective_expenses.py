@@ -61,14 +61,17 @@ with open(csv_filename, mode="w", newline="", encoding="utf-8") as csv_file:
     writer = csv.DictWriter(csv_file, fieldnames=csv_fields)
     writer.writeheader()
 
-    # ===== プロジェクト一覧を取得 =====
+    # ===== プロジェクト、コレクティブ一覧を取得 =====
     cur.execute("SELECT slug, name FROM projects;")
     projects = cur.fetchall()
-    log(f"✅ Loaded {len(projects)} projects from database")
+    cur.execute("SELECT slug, name FROM collectives;")
+    collectives = cur.fetchall()
+    log(f"✅ Loaded {len(projects)} projects and {len(collectives)} collectives from database")
 
-    for index, (slug, name) in enumerate(projects):
+    projects_collectives = projects + collectives
+    for index, (slug, name) in enumerate(projects_collectives):
         try:
-            log(f"Fetching expenses for {slug} ({index+1}/{len(projects)})...")
+            log(f"Fetching expenses for {slug} ({index+1}/{len(projects_collectives)})...")
             limit = 100
             offset = 0
 
