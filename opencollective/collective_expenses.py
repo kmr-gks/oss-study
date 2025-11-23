@@ -62,13 +62,13 @@ with open(csv_filename, mode="w", newline="", encoding="utf-8") as csv_file:
     writer.writeheader()
 
     # ===== プロジェクト一覧を取得 =====
-    cur.execute("SELECT slug, name FROM collectives;")
-    collectives = cur.fetchall()
-    log(f"✅ Loaded {len(collectives)} collectives from database")
+    cur.execute("SELECT slug, name FROM projects;")
+    projects = cur.fetchall()
+    log(f"✅ Loaded {len(projects)} projects from database")
 
-    for index, (slug, name) in enumerate(collectives):
+    for index, (slug, name) in enumerate(projects):
         try:
-            log(f"Fetching expenses for {slug} ({index+1}/{len(collectives)})...")
+            log(f"Fetching expenses for {slug} ({index+1}/{len(projects)})...")
             limit = 100
             offset = 0
 
