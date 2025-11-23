@@ -3,6 +3,7 @@ import api
 import csv
 import os
 import datetime
+import json
 import traceback
 
 # ===== ログ設定 =====
@@ -15,7 +16,9 @@ def log(msg):
         f.write(f"[{timestamp}] {msg}\n")
     print(msg)
 
+
 # ===== GraphQLクエリ =====
+# Transaction 内に expense があれば取得する
 query = """
 query ($slug: String!, $limit: Int!, $offset: Int!) {
   account(slug: $slug) {
@@ -32,11 +35,19 @@ query ($slug: String!, $limit: Int!, $offset: Int!) {
         amount { value currency }
         fromAccount { slug name type }
         toAccount   { slug name type }
+
+        # Expense data (nullable!)
+        expense {
+          type
+          description
+          tags
+        }
       }
     }
   }
 }
 """
+
 
 # ===== PostgreSQL接続 =====
 conn = psycopg2.connect(
@@ -47,31 +58,36 @@ conn = psycopg2.connect(
 )
 cur = conn.cursor()
 
+
 # ===== CSV準備 =====
 os.makedirs("outputs", exist_ok=True)
 csv_filename = datetime.datetime.now().strftime("outputs/collective_transactions_%Y-%m-%d_%H-%M-%S.csv")
+
 csv_fields = [
-    "id", "project_slug", "project_name", "type", "kind", "description",
-    "created_at", "amount_value", "amount_currency",
+    "id", "project_slug", "project_name",
+    "type", "kind", "description", "created_at",
+    "amount_value", "amount_currency",
     "from_account_slug", "from_account_name", "from_account_type",
-    "to_account_slug", "to_account_name", "to_account_type"
+    "to_account_slug", "to_account_name", "to_account_type",
+    "expense_type", "expense_description", "expense_tags"
 ]
 
 with open(csv_filename, mode="w", newline="", encoding="utf-8") as csv_file:
     writer = csv.DictWriter(csv_file, fieldnames=csv_fields)
     writer.writeheader()
 
-    # ===== プロジェクト、コレクティブ一覧を取得 =====
+    # ===== プロジェクト、コレクティブ一覧 =====
     cur.execute("SELECT slug, name FROM projects;")
     projects = cur.fetchall()
     cur.execute("SELECT slug, name FROM collectives;")
     collectives = cur.fetchall()
     log(f"✅ Loaded {len(projects)} projects and {len(collectives)} collectives from database")
 
-    projects_collectives = projects + collectives
-    for index, (slug, name) in enumerate(projects_collectives):
+    projects_collectives  = projects + collectives
+    for index, (slug, name) in enumerate(projects_collectives ):
         try:
-            log(f"Fetching transactions for {slug} ({index+1}/{len(projects_collectives)})...")
+            log(f"Fetching transactions for {slug} ({index+1}/{len(projects_collectives )})...")
+
             limit = 100
             offset = 0
 
@@ -83,14 +99,17 @@ with open(csv_filename, mode="w", newline="", encoding="utf-8") as csv_file:
                 if not account_data:
                     break
 
-                transactions = account_data["transactions"]["nodes"]
-                if not transactions:
+                nodes = account_data["transactions"]["nodes"]
+                if not nodes:
                     break
 
-                for tx in transactions:
+                for tx in nodes:
                     amount = tx.get("amount", {}) or {}
                     from_acc = tx.get("fromAccount", {}) or {}
                     to_acc = tx.get("toAccount", {}) or {}
+
+                    expense = tx.get("expense") or {}
+                    expense_tags = json.dumps(expense.get("tags", []), ensure_ascii=False)
 
                     record = {
                         "id": tx.get("id"),
@@ -108,6 +127,11 @@ with open(csv_filename, mode="w", newline="", encoding="utf-8") as csv_file:
                         "to_account_slug": to_acc.get("slug"),
                         "to_account_name": to_acc.get("name"),
                         "to_account_type": to_acc.get("type"),
+
+                        # === expense fields ===
+                        "expense_type": expense.get("type"),
+                        "expense_description": expense.get("description"),
+                        "expense_tags": expense_tags,
                     }
 
                     # SQL挿入
@@ -117,22 +141,24 @@ with open(csv_filename, mode="w", newline="", encoding="utf-8") as csv_file:
                             %(type)s, %(kind)s, %(description)s,
                             %(created_at)s, %(amount_value)s, %(amount_currency)s,
                             %(from_account_slug)s, %(from_account_name)s, %(from_account_type)s,
-                            %(to_account_slug)s, %(to_account_name)s, %(to_account_type)s
+                            %(to_account_slug)s, %(to_account_name)s, %(to_account_type)s,
+                            %(expense_type)s, %(expense_description)s, %(expense_tags)s
                         )
                         ON CONFLICT (id) DO NOTHING;
                     """, record)
 
-                    # CSVにも保存
                     writer.writerow(record)
 
                 conn.commit()
-                log(f"✅ Inserted {len(transactions)} records (slug={slug}, offset={offset})")
+                log(f"Inserted {len(nodes)} records (slug={slug}, offset={offset})")
+
                 offset += limit
 
         except Exception as e:
-            log(f"❌ Error processing {slug}: {e}")
+            log(f"ERROR on {slug}: {e}")
             log(traceback.format_exc())
+
 
 cur.close()
 conn.close()
-log("🎉 All transactions inserted successfully and saved to CSV.")
+log("All collective transactions inserted successfully.")
