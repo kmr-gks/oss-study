@@ -1,13 +1,14 @@
 .DS_Store
 note/
 output/
+oldlogs/
 *.pptx
 *.xlsx
 *.pdf
 opencollective/__pycache__/
 opencollective/lib/
 opencollective/logs/
-opencollective/figs/
+opencollective/fig*
 opencollective/captures
 opencollective/outputs
 credentials.json
