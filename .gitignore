@@ -16,3 +16,7 @@ credentials.json
 *.html
 *.csv
 mining*
+*.7z
+*.zip
+*.tar.gz
+*.tmp
