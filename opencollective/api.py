@@ -1,6 +1,7 @@
 import requests
 import json
 import time
+import random
 
 def load_token_from_credentials(file_path="credentials.json", service="opencollective"):
     """
@@ -78,7 +79,7 @@ def run_query(query: str, variables: dict = None, credentials_file="credentials.
 
         except requests.exceptions.RequestException as e:
             # ネットワーク系 or ステータスエラー（429など）
-            wait = backoff_base ** attempt  # 例: 2, 4, 8, 16, 32 秒
+            wait = backoff_base ** attempt * random.uniform(0, 1)
             print(f"リクエスト失敗 ({type(e).__name__}): {e}")
             if attempt < max_retries:
                 print(f"{wait:.1f}秒待って再試行します... ({attempt}/{max_retries})")
@@ -89,7 +90,7 @@ def run_query(query: str, variables: dict = None, credentials_file="credentials.
 
         except Exception as e:
             # GraphQLレベルのエラーもリトライ対象に含める
-            wait = backoff_base ** attempt
+            wait = backoff_base ** attempt * random.uniform(0, 1)
             print(f"GraphQLエラー: {e}")
             if attempt < max_retries:
                 print(f"{wait:.1f}秒待って再試行します... ({attempt}/{max_retries})")
