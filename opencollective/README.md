@@ -11,7 +11,9 @@ psql -U postgres -f sqlsetup.sql
 ```
 
 ## How to run
+
 credentials.jsonを作成する。
+
 ```json
 {
 	"opencollective": {
@@ -23,11 +25,15 @@ credentials.jsonを作成する。
 }
 
 ```
+
 ```PowerShell
 cd opencollective
 python project-counter.py
 python save_project_data.py
-python transaction_history.py
+cd ~\Desktop\oss-study\opencollective
+python .\collective_expenses.py
+python .\collective_transactions.py
+pg_dumpall -U postgres -f ".\logs\pg_all_$(Get-Date -Format yyyyMMdd_HHmm).sql"
 ```
 
 ## ファイル構成
