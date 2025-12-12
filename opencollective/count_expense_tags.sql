@@ -1,4 +1,6 @@
-SET CLIENT_ENCODING to UTF8;
+-- psql -U postgres -d opencollective -f .\count_expense_tags.sql
+set client_encoding to UTF8;
+
 -- 1. count each tag in expense_tags
 WITH tag_counts AS (
     SELECT jsonb_array_elements_text(expense_tags) AS tag
