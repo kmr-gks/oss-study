@@ -11,6 +11,7 @@ opencollective/logs/
 opencollective/fig*
 opencollective/captures
 opencollective/outputs
+opencollective/work/
 credentials.json
 *.json
 *.html
