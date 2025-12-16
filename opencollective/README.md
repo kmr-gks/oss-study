@@ -34,6 +34,8 @@ cd ~\Desktop\oss-study\opencollective
 python .\collective_expenses.py
 python .\collective_transactions.py
 pg_dumpall -U postgres -f ".\logs\pg_all_$(Get-Date -Format yyyyMMdd_HHmm).sql"
+psql -U postgres -d opencollective -f .\add-github.sql
+psql -U postgres -d opencollective -f .\count_unique_repos.sql
 ```
 
 ## ファイル構成
@@ -61,7 +63,11 @@ OpenCollectiveのAPIを利用して、特定のプロジェクトの残高など
 
 OpenCollectiveのAPIを利用して、特定のプロジェクトの財務データをPostgreSQLデータベースに保存する。
 
-`psql -U postgres -d opencollective -f .\add-github.sql`
+`add-github.sql`
+他のカラムからリポジトリ名を取得する。　
+
+`count_unique_repos.sql`
+ユニークなリポジトリ数をカウントする。
 
 ### backup:
 
