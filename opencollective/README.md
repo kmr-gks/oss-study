@@ -61,6 +61,8 @@ OpenCollectiveのAPIを利用して、特定のプロジェクトの残高など
 
 OpenCollectiveのAPIを利用して、特定のプロジェクトの財務データをPostgreSQLデータベースに保存する。
 
+`psql -U postgres -d opencollective -f .\add-github.sql`
+
 ### backup:
 
 pg_dumpall -U postgres -f ".\logs\pg_all_$(Get-Date -Format yyyyMMdd_HHmm).sql"
