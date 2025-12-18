@@ -6,4 +6,5 @@ SELECT
   COUNT(*) AS count
 FROM collective_transactions
 GROUP BY COALESCE(description, '[null]')
-ORDER BY count DESC;
+ORDER BY count DESC
+LIMIT 20;

@@ -27,4 +27,5 @@ UNION ALL
 SELECT tag, count
 FROM empty_counts
 
-ORDER BY count DESC;
+ORDER BY count DESC
+LIMIT 20;
