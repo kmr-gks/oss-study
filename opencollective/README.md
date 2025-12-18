@@ -36,6 +36,7 @@ python .\collective_transactions.py
 pg_dumpall -U postgres -f ".\logs\pg_all_$(Get-Date -Format yyyyMMdd_HHmm).sql"
 psql -U postgres -d opencollective -f .\add-github.sql
 psql -U postgres -d opencollective -f .\count_unique_repos.sql
+python .\clone-repos.py
 ```
 
 ## ファイル構成
