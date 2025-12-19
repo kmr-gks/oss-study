@@ -138,7 +138,6 @@
  samu                 |     187
  aws                  |     181
  maintainer-stipend   |     170
-(20 行)
 
 `psql -U postgres -d opencollective -f .\count_expense_type.sql`
 
@@ -151,7 +150,6 @@
  UNCLASSIFIED |    2336
  GRANT        |    1447
  SETTLEMENT   |       3
-(7 行)
 
 `psql -U postgres -d opencollective -f .\count_kind.sql`
 
