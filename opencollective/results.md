@@ -153,15 +153,16 @@
 
 `psql -U postgres -d opencollective -f .\count_kind.sql`
 
-          kind           |  count  
-------------------------- | ---------
- CONTRIBUTION            | 1080778
- HOST_FEE                |  825224
- PAYMENT_PROCESSOR_FEE   |  413958
- EXPENSE                 |   50458
- ADDED_FUNDS             |   14522
- PAYMENT_PROCESSOR_COVER |    3383
- BALANCE_TRANSFER        |     974
- PREPAID_PAYMENT_METHOD  |      45
- TAX                     |      19
- PLATFORM_TIP            |       1
+
+          kind           |  count  | total_amount_value 
+-------------------------|---------|--------------------
+ CONTRIBUTION            | 1080778 |        42499620.50
+ HOST_FEE                |  825224 |        -5145731.71
+ PAYMENT_PROCESSOR_FEE   |  413958 |         -664918.74
+ EXPENSE                 |   50458 |       -74319625.39
+ ADDED_FUNDS             |   14522 |        65255380.16
+ PAYMENT_PROCESSOR_COVER |    3383 |           10571.91
+ BALANCE_TRANSFER        |     974 |         -812051.16
+ PREPAID_PAYMENT_METHOD  |      45 |          126457.86
+ TAX                     |      19 |            -468.50
+ PLATFORM_TIP            |       1 |                -50
