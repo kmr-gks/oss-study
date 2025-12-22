@@ -27,6 +27,7 @@ credentials.jsonを作成する。
 ```
 
 ```PowerShell
+
 cd opencollective
 python project-counter.py
 python save_project_data.py
@@ -37,6 +38,10 @@ pg_dumpall -U postgres -f ".\logs\pg_all_$(Get-Date -Format yyyyMMdd_HHmm).sql"
 psql -U postgres -d opencollective -f .\add-github.sql
 psql -U postgres -d opencollective -f .\set_unique_repos.sql
 python .\clone-repos.py
+psql -U postgres -d opencollective -f .\commit_table.sql
+python .\mine_commits.py
+
+
 ```
 
 ## ファイル構成
