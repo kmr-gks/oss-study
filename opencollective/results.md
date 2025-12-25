@@ -165,36 +165,35 @@
 
 `psql -U postgres -d opencollective -f .\expense_ranking.sql`
 
- to_account_type | count 
------------------|-------
- INDIVIDUAL      | 32753
- VENDOR          |  6566
- ORGANIZATION    |  2862
- COLLECTIVE      |   645
- PROJECT         |   537
- FUND            |    25
- EVENT           |     5
+| to_account_type | count |
+| --------------- | ----- |
+| INDIVIDUAL      | 32753 |
+| VENDOR          | 6566  |
+| ORGANIZATION    | 2862  |
+| COLLECTIVE      | 645   |
+| PROJECT         | 537   |
+| FUND            | 25    |
+| EVENT           | 5     |
 
-   to_account_name    | count 
-----------------------|-------
- NumFOCUS             |   360
- DIGITALOCEAN.COM     |   303
- GITHUB               |   303
- Amazon web services  |   301
- Velocity Global/Pebl |   295
- HETZNER.COM          |   248
- CLOUDFLARE           |   205
- Rob Eisenberg        |   198
- Marcelo Boveto Shima |   164
- Richard Littauer     |   159
- Hyunsu Cho           |   137
- Vladimir Kharlampidi |   134
- Quentin Monmert      |   132
- Will Pine            |   132
- GITHUB, INC.         |   125
- Samson               |   124
- Aperio Software      |   122
- Andrew Nesbitt       |   120
- Hﾃ･kan Edling         |   114
- Fred Kleuver         |   109
-
+| to_account_name      | count |
+| -------------------- | ----- |
+| NumFOCUS             | 360   |
+| DIGITALOCEAN.COM     | 303   |
+| GITHUB               | 303   |
+| Amazon web services  | 301   |
+| Velocity Global/Pebl | 295   |
+| HETZNER.COM          | 248   |
+| CLOUDFLARE           | 205   |
+| Rob Eisenberg        | 198   |
+| Marcelo Boveto Shima | 164   |
+| Richard Littauer     | 159   |
+| Hyunsu Cho           | 137   |
+| Vladimir Kharlampidi | 134   |
+| Quentin Monmert      | 132   |
+| Will Pine            | 132   |
+| GITHUB, INC.         | 125   |
+| Samson               | 124   |
+| Aperio Software      | 122   |
+| Andrew Nesbitt       | 120   |
+| Hﾃ･kan Edling      | 114   |
+| Fred Kleuver         | 109   |
