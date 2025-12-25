@@ -61,108 +61,140 @@
 | project_slug        | 2                | YES         | text                        | 1073741824             |                         |                    | text      | 2              |
 | project_name        | 3                | YES         | text                        | 1073741824             |                         |                    | text      | 3              |
 
-
-
-
 `psql -U postgres -d opencollective -f .\count_description.sql`
 
-                           description                            | count  
------------------------------------------------------------------- | --------
- Host Fee                                                         | 821988
- Stripe payment processor fee                                     | 275301
- PayPal payment processor fee                                     | 128936
- Monthly financial contribution to Logseq (Backers)               | 122761
- Monthly financial contribution to PHP Foundation (Backers)       |  18547
- Monthly financial contribution to webpack (Backer)               |  15571
- monthly recurring subscription                                   |  14098
- Monthly financial contribution to Destiny Item Manager (Backers) |  12906
- Monthly financial contribution to Eleventy (Backer)              |  10638
- Monthly financial contribution to JHipster (Backer)              |  10146
- Monthly financial contribution to Dark Reader (backer)           |   9881
- Monthly financial contribution to socket.io (Sponsors)           |   9811
- Other Payment Processor payment processor fee                    |   9684
- Monthly financial contribution to AnkiDroid (backer)             |   9253
- Monthly financial contribution to Babel (Backers)                |   8453
- Monthly financial contribution to Mocha (Backers)                |   8187
- Financial contribution to AnkiDroid                              |   7455
- Monthly financial contribution to Jest (backer)                  |   7431
- Monthly financial contribution to Qubes OS (Backers)             |   7253
- Monthly financial contribution to nest (Backers ��)              |   7225
+| description                                                      | count  |
+| ---------------------------------------------------------------- | ------ |
+| Host Fee                                                         | 821988 |
+| Stripe payment processor fee                                     | 275301 |
+| PayPal payment processor fee                                     | 128936 |
+| Monthly financial contribution to Logseq (Backers)               | 122761 |
+| Monthly financial contribution to PHP Foundation (Backers)       | 18547  |
+| Monthly financial contribution to webpack (Backer)               | 15571  |
+| monthly recurring subscription                                   | 14098  |
+| Monthly financial contribution to Destiny Item Manager (Backers) | 12906  |
+| Monthly financial contribution to Eleventy (Backer)              | 10638  |
+| Monthly financial contribution to JHipster (Backer)              | 10146  |
+| Monthly financial contribution to Dark Reader (backer)           | 9881   |
+| Monthly financial contribution to socket.io (Sponsors)           | 9811   |
+| Other Payment Processor payment processor fee                    | 9684   |
+| Monthly financial contribution to AnkiDroid (backer)             | 9253   |
+| Monthly financial contribution to Babel (Backers)                | 8453   |
+| Monthly financial contribution to Mocha (Backers)                | 8187   |
+| Financial contribution to AnkiDroid                              | 7455   |
+| Monthly financial contribution to Jest (backer)                  | 7431   |
+| Monthly financial contribution to Qubes OS (Backers)             | 7253   |
+| Monthly financial contribution to nest (Backers ��)          | 7225   |
 
 `psql -U postgres -d opencollective -f .\count_expense_description.sql`
 
-             expense_description             |  count  
---------------------------------------------- | ---------
- [null]                                      | 2326366
- Bounty Payout                               |     818
- Virtual Card charge: DIGITALOCEAN.COM       |     303
- Virtual Card charge: GITHUB                 |     302
- Virtual Card charge: Amazon web services    |     301
- Virtual Card charge: HETZNER.COM            |     217
- Development                                 |     213
- Virtual Card charge: CLOUDFLARE             |     206
- BLTF Wellness Provider                      |     199
- TAP Contributing Provider                   |     135
- Virtual Card charge: GITHUB, INC.           |     127
- Development Expense                         |     112
- Maintenance                                 |     101
- Yii 3 development                           |      89
- Virtual Card charge: Discourse              |      86
- Quarterly Homebrew Maintenance              |      78
- Virtual Card charge: AMZN Mktp US*2X0349O72 |      77
- Virtual Card charge: AWS EMEA               |      77
- Virtual Card charge: infomaniak.com         |      75
- Cloudflare                                  |      72
+| expense_description                         | count   |
+| ------------------------------------------- | ------- |
+| [null]                                      | 2326366 |
+| Bounty Payout                               | 818     |
+| Virtual Card charge: DIGITALOCEAN.COM       | 303     |
+| Virtual Card charge: GITHUB                 | 302     |
+| Virtual Card charge: Amazon web services    | 301     |
+| Virtual Card charge: HETZNER.COM            | 217     |
+| Development                                 | 213     |
+| Virtual Card charge: CLOUDFLARE             | 206     |
+| BLTF Wellness Provider                      | 199     |
+| TAP Contributing Provider                   | 135     |
+| Virtual Card charge: GITHUB, INC.           | 127     |
+| Development Expense                         | 112     |
+| Maintenance                                 | 101     |
+| Yii 3 development                           | 89      |
+| Virtual Card charge: Discourse              | 86      |
+| Quarterly Homebrew Maintenance              | 78      |
+| Virtual Card charge: AMZN Mktp US*2X0349O72 | 77      |
+| Virtual Card charge: AWS EMEA               | 77      |
+| Virtual Card charge: infomaniak.com         | 75      |
+| Cloudflare                                  | 72      |
 
 `psql -U postgres -d opencollective -f .\count_expense_tags.sql`
 
-         tag          |  count  
----------------------- | ---------
- []                   | 2372450
- engineering          |    2610
- web services         |    1212
- travel               |     765
- infrastructure       |     752
- approved             |     489
- communications       |     470
- hosting              |     404
- food & beverage      |     381
- hardware             |     380
- development          |     355
- core developer       |     321
- marketing            |     293
- bounty               |     222
- team                 |     219
- supplies & materials |     200
- infra                |     200
- samu                 |     187
- aws                  |     181
- maintainer-stipend   |     170
+| tag                  | count   |
+| -------------------- | ------- |
+| []                   | 2372450 |
+| engineering          | 2610    |
+| web services         | 1212    |
+| travel               | 765     |
+| infrastructure       | 752     |
+| approved             | 489     |
+| communications       | 470     |
+| hosting              | 404     |
+| food & beverage      | 381     |
+| hardware             | 380     |
+| development          | 355     |
+| core developer       | 321     |
+| marketing            | 293     |
+| bounty               | 222     |
+| team                 | 219     |
+| supplies & materials | 200     |
+| infra                | 200     |
+| samu                 | 187     |
+| aws                  | 181     |
+| maintainer-stipend   | 170     |
 
 `psql -U postgres -d opencollective -f .\count_expense_type.sql`
 
- expense_type |  count  
--------------- | ---------
- [null]       | 2326366
- INVOICE      |   31059
- RECEIPT      |   22156
- CHARGE       |    5995
- UNCLASSIFIED |    2336
- GRANT        |    1447
- SETTLEMENT   |       3
+| expense_type | count   |
+| ------------ | ------- |
+| [null]       | 2326366 |
+| INVOICE      | 31059   |
+| RECEIPT      | 22156   |
+| CHARGE       | 5995    |
+| UNCLASSIFIED | 2336    |
+| GRANT        | 1447    |
+| SETTLEMENT   | 3       |
 
 `psql -U postgres -d opencollective -f .\count_kind.sql`
 
+| kind                    | count   | total_amount_value(USD) |
+| ----------------------- | ------- | ----------------------- |
+| CONTRIBUTION            | 1080778 | 42499620.50             |
+| HOST_FEE                | 825224  | -5145731.71             |
+| PAYMENT_PROCESSOR_FEE   | 413958  | -664918.74              |
+| EXPENSE                 | 50458   | -74319625.39            |
+| ADDED_FUNDS             | 14522   | 65255380.16             |
+| PAYMENT_PROCESSOR_COVER | 3383    | 10571.91                |
+| BALANCE_TRANSFER        | 974     | -812051.16              |
+| PREPAID_PAYMENT_METHOD  | 45      | 126457.86               |
+| TAX                     | 19      | -468.50                 |
+| PLATFORM_TIP            | 1       | -50                     |
 
-          kind           |  count  | total_amount_value 
--------------------------|---------|--------------------
- CONTRIBUTION            | 1080778 |        42499620.50
- HOST_FEE                |  825224 |        -5145731.71
- PAYMENT_PROCESSOR_FEE   |  413958 |         -664918.74
- EXPENSE                 |   50458 |       -74319625.39
- ADDED_FUNDS             |   14522 |        65255380.16
- PAYMENT_PROCESSOR_COVER |    3383 |           10571.91
- BALANCE_TRANSFER        |     974 |         -812051.16
- PREPAID_PAYMENT_METHOD  |      45 |          126457.86
- TAX                     |      19 |            -468.50
- PLATFORM_TIP            |       1 |                -50
+`psql -U postgres -d opencollective -f .\expense_ranking.sql`
+
+ to_account_type | count 
+-----------------|-------
+ INDIVIDUAL      | 32753
+ VENDOR          |  6566
+ ORGANIZATION    |  2862
+ COLLECTIVE      |   645
+ PROJECT         |   537
+ FUND            |    25
+ EVENT           |     5
+
+   to_account_name    | count 
+----------------------|-------
+ NumFOCUS             |   360
+ DIGITALOCEAN.COM     |   303
+ GITHUB               |   303
+ Amazon web services  |   301
+ Velocity Global/Pebl |   295
+ HETZNER.COM          |   248
+ CLOUDFLARE           |   205
+ Rob Eisenberg        |   198
+ Marcelo Boveto Shima |   164
+ Richard Littauer     |   159
+ Hyunsu Cho           |   137
+ Vladimir Kharlampidi |   134
+ Quentin Monmert      |   132
+ Will Pine            |   132
+ GITHUB, INC.         |   125
+ Samson               |   124
+ Aperio Software      |   122
+ Andrew Nesbitt       |   120
+ Hﾃ･kan Edling         |   114
+ Fred Kleuver         |   109
+
