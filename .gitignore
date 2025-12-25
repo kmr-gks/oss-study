@@ -21,3 +21,4 @@ mining*
 *.zip
 *.tar.gz
 *.tmp
+opencollective/out.txt
