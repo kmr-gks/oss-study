@@ -21,16 +21,5 @@ FROM collective_transactions
 WHERE kind = 'EXPENSE'
   AND amount_currency = 'USD'
 GROUP BY COALESCE(to_account_name, '[null]')
-ORDER BY total_amount_value ASC
-LIMIT 20;
-
-SELECT
-  COALESCE(to_account_name, '[null]') AS to_account_name,
-  count(*) AS count,
-  SUM(amount_value) AS total_amount_value
-FROM collective_transactions
-WHERE kind = 'EXPENSE'
-  AND amount_currency = 'USD'
-GROUP BY COALESCE(to_account_name, '[null]')
-ORDER BY total_amount_value DESC
+ORDER BY total_amount_value
 LIMIT 20;

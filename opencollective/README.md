@@ -41,7 +41,8 @@ psql -U postgres -d opencollective -f .\expense_ranking.sql
 python .\clone-repos.py
 psql -U postgres -d opencollective -f .\commit_table.sql
 python .\mine_commits.py
-
+psql -U postgres -d opencollective -f .\expense_ranking.sql
+psql -U postgres -d opencollective -f .\expense_amount_ranking.sql
 
 ```
 

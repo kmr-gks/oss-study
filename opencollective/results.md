@@ -216,3 +216,41 @@ LIMIT 20;
 | Andrew Nesbitt       | 120   |
 | Hﾃ･kan Edling      | 114   |
 | Fred Kleuver         | 109   |
+
+psql -U postgres -d opencollective -f .\expense_amount_ranking.sql
+支出総額ランキング
+
+| to_account_type | count | total_amount_value |
+| --------------- | ----- | ------------------ |
+| PROJECT         | 537   | 285842.24          |
+| EVENT           | 5     | 104                |
+| FUND            | 25    | -5028.64           |
+| COLLECTIVE      | 645   | -917935.96         |
+| VENDOR          | 6566  | -4585745.79        |
+| ORGANIZATION    | 2862  | -15513436.46       |
+| INDIVIDUAL      | 32753 | -37199574.51       |
+
+支出総額ランキング
+
+| to_account_name         | count | total_amount_value |
+| ----------------------- | ----- | ------------------ |
+| Velocity Global/Pebl    | 295   | -2738237.60        |
+| NumFOCUS                | 360   | -2152324.26        |
+| Quansight LLC           | 77    | -1282834.60        |
+| Least Authority         | 51    | -1170070.19        |
+| OddBird                 | 51    | -1082663.49        |
+| Aperio Software         | 122   | -964635.4          |
+| Systema Development LLC | 99    | -871639.08         |
+| DA DEVELOPPEMENT        | 58    | -720000.01         |
+| Open Source Collective  | 65    | -616961.23         |
+| Vladimir Kharlampidi    | 134   | -588632.02         |
+| Kamil Mysliwiec         | 52    | -567907.01         |
+| Oscar Dowson            | 26    | -560450.35         |
+| TJ Consulting           | 33    | -551766.61         |
+| Aleksander              | 93    | -503709.5          |
+| Aspiration              | 4     | -486839.93         |
+| Haoqun Jiang            | 57    | -461150.04         |
+| Matthias Kurz           | 72    | -459646.90         |
+| henry                   | 47    | -413019.21         |
+| Logseq                  | 11    | -409400            |
+| MeanIT Software Inc     | 44    | -397037.5          |
