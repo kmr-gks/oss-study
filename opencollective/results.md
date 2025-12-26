@@ -165,6 +165,15 @@
 
 `psql -U postgres -d opencollective -f .\expense_ranking.sql`
 
+受け取った資金を何に使用しているか（どんな種類のアカウントに送金しているか）
+
+```sql
+SELECT to_account_type, COUNT(*) AS count
+FROM collective_transactions
+WHERE kind = 'EXPENSE' AND amount_currency = 'USD'
+GROUP BY to_account_type ORDER BY count DESC;
+```
+
 | to_account_type | count |
 | --------------- | ----- |
 | INDIVIDUAL      | 32753 |
@@ -174,6 +183,16 @@
 | PROJECT         | 537   |
 | FUND            | 25    |
 | EVENT           | 5     |
+
+受け取った資金を何に使用しているか（どのアカウントに送金しているか）
+
+```sql
+SELECT to_account_name, COUNT(*) AS count
+FROM collective_transactions
+WHERE kind = 'EXPENSE'  AND amount_currency = 'USD'
+GROUP BY to_account_name ORDER BY count DESC
+LIMIT 20;
+```
 
 | to_account_name      | count |
 | -------------------- | ----- |
