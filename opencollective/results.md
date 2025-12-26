@@ -217,8 +217,15 @@ LIMIT 20;
 | Hﾃ･kan Edling      | 114   |
 | Fred Kleuver         | 109   |
 
-psql -U postgres -d opencollective -f .\expense_amount_ranking.sql
+`psql -U postgres -d opencollective -f .\expense_amount_ranking.sql`
+
 支出総額ランキング
+```sql
+SELECT to_account_type, count(*) AS count, SUM(amount_value) AS total_amount_value
+FROM collective_transactions
+WHERE kind = 'EXPENSE' AND amount_currency = 'USD'
+GROUP BY to_account_type ORDER BY total_amount_value DESC;
+```
 
 | to_account_type | count | total_amount_value |
 | --------------- | ----- | ------------------ |
@@ -231,6 +238,13 @@ psql -U postgres -d opencollective -f .\expense_amount_ranking.sql
 | INDIVIDUAL      | 32753 | -37199574.51       |
 
 支出総額ランキング
+```sql
+SELECT to_account_name, count(*) AS count, SUM(amount_value) AS total_amount_value
+FROM collective_transactions
+WHERE kind = 'EXPENSE' AND amount_currency = 'USD'
+GROUP BY to_account_name ORDER BY total_amount_value
+LIMIT 20;
+```
 
 | to_account_name         | count | total_amount_value |
 | ----------------------- | ----- | ------------------ |
