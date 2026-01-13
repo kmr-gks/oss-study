@@ -2,8 +2,9 @@ import requests
 import json
 import time
 import random
+import os
 
-def load_token_from_credentials(file_path="credentials.json", service="opencollective"):
+def load_token_from_credentials(file_path=None, service=None):
     """
     credentials.json から API トークンを読み込む。
     {
@@ -11,6 +12,11 @@ def load_token_from_credentials(file_path="credentials.json", service="opencolle
     }
     の形式を想定。
     """
+    if file_path is None:
+        parent_dir = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(parent_dir, "credentials.json")
+    if service is None:
+        service = "postgresql"
     with open(file_path, "r", encoding="utf-8") as f:
         creds = json.load(f)
 
@@ -24,7 +30,7 @@ def load_token_from_credentials(file_path="credentials.json", service="opencolle
 
     return token.strip()
 
-def load_sql_password_from_credentials(file_path="credentials.json", service="postgresql"):
+def load_sql_password_from_credentials(file_path=None, service=None):
     """
     credentials.json からデータベースのパスワードを読み込む。
     {
@@ -32,6 +38,12 @@ def load_sql_password_from_credentials(file_path="credentials.json", service="po
     }
     の形式を想定。
     """
+    if file_path is None:
+        parent_dir = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(parent_dir, "credentials.json")
+    if service is None:
+        service = "postgresql"
+    print(f"Loading SQL password for service '{service}' from {file_path}")
     with open(file_path, "r", encoding="utf-8") as f:
         creds = json.load(f)
 
