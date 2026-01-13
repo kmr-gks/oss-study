@@ -24,6 +24,7 @@ INCLUDE_ALL_REFS = True
 
 def run_git(repo_path: str, args: List[str]) -> str:
     """Run git command in repo_path and return stdout as text."""
+    print(f"Running git command : git {' '.join(args)}")
     p = subprocess.run(
         ["git"] + args,
         cwd=repo_path,
@@ -283,7 +284,7 @@ def main():
             print(f"  -> {inserted} commits upserted")
         except Exception as e:
             conn.rollback()
-            print(f"  !! ERROR: {e}")
+            print(f"  !! ERROR: {e}", file=os.sys.stderr)
 
     cur.close()
     conn.close()
