@@ -69,7 +69,7 @@ def collect_commits(repo_path, output_file):
     # %s: subject
     log_format = f"%H{SEPARATOR}%P{SEPARATOR}%an{SEPARATOR}%ae{SEPARATOR}%at{SEPARATOR}%cn{SEPARATOR}%ce{SEPARATOR}%ct{SEPARATOR}%s"
     
-    cmd_full = ["git", "log", f"--pretty=format:COMMIT:{log_format}", "--name-only"]
+    cmd_full = ["git", "log", "--all", f"--pretty=format:COMMIT:{log_format}", "--name-only"]
     full_output = run_git_command(repo_path, cmd_full)
     
     if not full_output:
@@ -144,9 +144,28 @@ def collect_commits(repo_path, output_file):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Collect commit history from a git repository.")
-    parser.add_argument("repo_path", help="Path to the git repository")
+    parser.add_argument("repo_path", help="Path to the git repository OR 'owner/repo' for GitHub")
     parser.add_argument("--output", default="commits.csv", help="Output CSV file name")
     
     args = parser.parse_args()
     
-    collect_commits(args.repo_path, args.output)
+    if os.path.exists(args.repo_path) and os.path.isdir(args.repo_path):
+        collect_commits(args.repo_path, args.output)
+    elif re.match(r'^[a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+$', args.repo_path):
+        import tempfile
+        
+        print(f"Detected GitHub repository identifier: {args.repo_path}")
+        with tempfile.TemporaryDirectory() as temp_dir:
+            print(f"Cloning https://github.com/{args.repo_path}.git into temporary directory...")
+            try:
+                subprocess.run(
+                    ["git", "clone", f"https://github.com/{args.repo_path}.git", temp_dir],
+                    check=True
+                )
+                collect_commits(temp_dir, args.output)
+            except subprocess.CalledProcessError as e:
+                print(f"Failed to clone repository: {e}")
+                sys.exit(1)
+    else:
+        print(f"Error: '{args.repo_path}' is not a valid directory or GitHub repository identifier (formatted as 'owner/repo').")
+        sys.exit(1)
