@@ -56,7 +56,7 @@ def collect_commits(repo_path, output_file):
 
     # Git log command to get detailed info
     # Fields: Hash, Parent Hashes, Author Name, Author Email, Author Date, 
-    #         Committer Name, Committer Email, Committer Date, Subject
+    #         Committer Name, Committer Email, Committer Date, Subject, Body
     SEPARATOR = "|||---|||"
     # %H: commit hash
     # %P: parent hashes
@@ -67,9 +67,14 @@ def collect_commits(repo_path, output_file):
     # %ce: committer email
     # %ct: committer date, UNIX timestamp
     # %s: subject
-    log_format = f"%H{SEPARATOR}%P{SEPARATOR}%an{SEPARATOR}%ae{SEPARATOR}%at{SEPARATOR}%cn{SEPARATOR}%ce{SEPARATOR}%ct{SEPARATOR}%s"
+    # %b: body
+    log_format = f"%H{SEPARATOR}%P{SEPARATOR}%an{SEPARATOR}%ae{SEPARATOR}%at{SEPARATOR}%cn{SEPARATOR}%ce{SEPARATOR}%ct{SEPARATOR}%s{SEPARATOR}%b"
     
-    cmd_full = ["git", "log", "--all", f"--pretty=format:COMMIT:{log_format}", "--name-only"]
+    # Use unique markers to reliably separate commits and metadata from file lists
+    START_MARKER = "__COMMIT_START__"
+    END_MARKER = "__COMMIT_END__"
+    
+    cmd_full = ["git", "log", "--all", f"--pretty=format:{START_MARKER}{log_format}{END_MARKER}", "--name-only"]
     full_output = run_git_command(repo_path, cmd_full)
     
     if not full_output:
@@ -85,13 +90,11 @@ def collect_commits(repo_path, output_file):
             'Parent Hashes',
             'Author Name', 'Author Email', 'Author Date (UTC)',
             'Committer Name', 'Committer Email', 'Committer Date (UTC)',
-            'Message', 
+            'Message',
+            'Description',
             'File Count'
         ]
         writer.writerow(headers)
-        
-        current_commit_data = None
-        current_file_count = 0
         
         # Helper to convert timestamp to UTC string
         def format_date(timestamp_str):
@@ -103,13 +106,13 @@ def collect_commits(repo_path, output_file):
             except ValueError:
                 return timestamp_str
 
-        # Helper to write the previous commit
+        # Helper to write the commit
         def write_commit(commit_data, file_count):
             if commit_data:
                 # Parse and format dates (indices 4 and 7 in the split list)
                 # 0: Hash, 1: Parents, 2: AuthName, 3: AuthEmail, 4: AuthDateTS
-                # 5: CommitName, 6: CommitEmail, 7: CommitDateTS, 8: Msg
-                if len(commit_data) >= 9:
+                # 5: CommitName, 6: CommitEmail, 7: CommitDateTS, 8: Msg, 9: Body
+                if len(commit_data) >= 10:
                     commit_data[4] = format_date(commit_data[4])
                     commit_data[7] = format_date(commit_data[7])
 
@@ -117,28 +120,25 @@ def collect_commits(repo_path, output_file):
                 row = [repo_owner, repo_name] + commit_data + [file_count]
                 writer.writerow(row)
 
-        for line in full_output.split('\n'):
-            line = line.strip()
-            if not line:
-                continue
-            
-            if line.startswith(f"COMMIT:"):
-                # If we have a current commit, write it
-                if current_commit_data:
-                    write_commit(current_commit_data, current_file_count)
-                
-                # Start new commit
-                raw_data = line[7:] # remove "COMMIT:"
-                current_commit_data = raw_data.split(SEPARATOR)
-                current_file_count = 0
-            else:
-                # This is a file line (or part of one)
-                # git log --name-only ensures we get file paths
-                current_file_count += 1
+        # Regex to find blocks: START...END...files...(next START or EOF)
+        # We use re.DOTALL so . matches newlines
+        pattern = re.compile(
+            re.escape(START_MARKER) + r"(.*?)" + re.escape(END_MARKER) + r"(.*?)(?=^" + re.escape(START_MARKER) + r"|\Z)", 
+            re.MULTILINE | re.DOTALL
+        )
         
-        # Write the last commit
-        if current_commit_data:
-             write_commit(current_commit_data, current_file_count)
+        for match in pattern.finditer(full_output):
+            raw_data = match.group(1)
+            files_block = match.group(2)
+            
+            commit_data = raw_data.split(SEPARATOR)
+            
+            # Count files
+            # files_block contains filenames separated by newlines
+            file_lines = [line.strip() for line in files_block.strip().split('\n') if line.strip()]
+            file_count = len(file_lines)
+            
+            write_commit(commit_data, file_count)
                 
     print(f"Finished! output saved to {output_file}")
 
