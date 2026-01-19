@@ -148,6 +148,9 @@ if __name__ == "__main__":
     parser.add_argument("--output", default="commits.csv", help="Output CSV file name")
     
     args = parser.parse_args()
+
+    if args.output == "commits.csv":
+        args.output = f"{args.repo_path.replace('/', '_').replace('\\', '_')}_commits.csv"
     
     if os.path.exists(args.repo_path) and os.path.isdir(args.repo_path):
         collect_commits(args.repo_path, args.output)
