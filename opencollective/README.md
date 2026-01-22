@@ -27,19 +27,23 @@ credentials.jsonを作成する。
 ```
 
 ```PowerShell
-
 cd opencollective
 python project-counter.py
 python save_project_data.py
+# mine collective data
+python save_collective_data.py
 cd ~\Desktop\oss-study\opencollective
 python .\collective_expenses.py
+# mine transactions data
 python .\collective_transactions.py
 pg_dumpall -U postgres -f ".\logs\pg_all_$(Get-Date -Format yyyyMMdd_HHmm).sql"
+# add github column
 psql -U postgres -d opencollective -f .\add-github.sql
 psql -U postgres -d opencollective -f .\set_unique_repos.sql
 psql -U postgres -d opencollective -f .\expense_ranking.sql
 python .\clone-repos.py
 psql -U postgres -d opencollective -f .\commit_table.sql
+# mine commits data
 python .\mine_commits.py
 psql -U postgres -d opencollective -f .\expense_ranking.sql
 psql -U postgres -d opencollective -f .\expense_amount_ranking.sql
