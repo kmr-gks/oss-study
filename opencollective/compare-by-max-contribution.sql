@@ -5,18 +5,20 @@ set client_encoding to UTF8;
 
 COPY (
   WITH max_contribution AS (
-    SELECT DISTINCT ON (project_slug)
+    SELECT
       project_slug,
-      created_at AS funding_time
+      MIN(created_at) AS funding_time,
+      MAX(amount_value) AS max_contribution_usd
     FROM collective_transactions
     WHERE kind = 'CONTRIBUTION'
-      AND amount_value IS NOT NULL
-    ORDER BY project_slug, amount_value DESC, created_at
+      AND amount_currency = 'USD'
+    GROUP BY project_slug
   ),
   mapped AS (
     SELECT
       mc.project_slug,
       mc.funding_time,
+      mc.max_contribution_usd,
       REPLACE(col.github_account, '/', '-') AS repo_name_key
     FROM max_contribution mc
     JOIN collectives col
@@ -26,6 +28,8 @@ COPY (
   counts AS (
     SELECT
       m.project_slug,
+      m.funding_time,
+      m.max_contribution_usd,
       COUNT(*) FILTER (
         WHERE c.author_time >= m.funding_time - INTERVAL '90 days'
           AND c.author_time <  m.funding_time
@@ -37,10 +41,12 @@ COPY (
     FROM mapped m
     JOIN commit_history c
       ON c.repo_name = m.repo_name_key
-    GROUP BY m.project_slug, m.funding_time
+    GROUP BY m.project_slug, m.funding_time, m.max_contribution_usd
   )
   SELECT
     project_slug,
+    funding_time,
+    max_contribution_usd,
     commits_before,
     commits_after,
     commits_after - commits_before AS diff,
