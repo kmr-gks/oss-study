@@ -31,6 +31,15 @@ df180 = load_and_clean("commit-num-by-180days-of-max-contribution.csv")
 print("30 days:", len(df30))
 print("180 days:", len(df180))
 
+all_ratios = np.concatenate([
+    df30["ratio"].values,
+    df180["ratio"].values
+])
+xmin = np.nanmin(all_ratios)
+xmax = np.nanmax(all_ratios)
+
+bins = np.linspace(xmin, xmax, 100)
+
 fig, axes = plt.subplots(1, 2, figsize=(14, 5), sharey=True)
 
 for ax, df, label in zip(
@@ -38,8 +47,9 @@ for ax, df, label in zip(
     [df30, df180],
     ["±30 days", "±180 days"]
 ):
-    ax.hist(df["ratio"], bins=50)
-    ax.axvline(1.0, color="red", linestyle="--")
+    ax.hist(df["ratio"], bins=bins)
+    ax.axvline(1.0, color="red", linestyle="--", label="ratio = 1")
+    ax.set_xlim(xmin, xmax)
     ax.set_yscale("log")
     ax.set_title(label)
     ax.set_xlabel("Commit activity ratio")
@@ -47,7 +57,7 @@ for ax, df, label in zip(
 axes[0].set_ylabel("Number of projects (log scale)")
 fig.suptitle("Distribution of commit activity change around max funding event")
 plt.tight_layout()
-plt.savefig("commit_activity_ratio_histogram.png")
+plt.savefig("commit_activity_ratio_histogram.png", dpi=300)
 plt.close()
 
 merged = df30.merge(
