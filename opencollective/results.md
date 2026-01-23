@@ -220,6 +220,7 @@ LIMIT 20;
 `psql -U postgres -d opencollective -f .\expense_amount_ranking.sql`
 
 支出総額ランキング
+
 ```sql
 SELECT to_account_type, count(*) AS count, SUM(amount_value) AS total_amount_value
 FROM collective_transactions
@@ -238,6 +239,7 @@ GROUP BY to_account_type ORDER BY total_amount_value DESC;
 | INDIVIDUAL      | 32753 | -37199574.51       |
 
 支出総額ランキング
+
 ```sql
 SELECT to_account_name, count(*) AS count, SUM(amount_value) AS total_amount_value
 FROM collective_transactions
@@ -268,3 +270,53 @@ LIMIT 20;
 | henry                   | 47    | -413019.21         |
 | Logseq                  | 11    | -409400            |
 | MeanIT Software Inc     | 44    | -397037.5          |
+
+資金が使用される前と後でコミット数が変わるか比較
+
+1. それぞれのプロジェクトについて、いつ最も多くの資金を使用したのかを調査
+2. それぞれのプロジェクトについて、最も多くの資金を使用した日を基準に
+   前の30日間のコミット数
+   後の30日間のコミット数
+   前の180日間のコミット数
+   後の180日間のコミット数
+   をcsvで記録する
+3. 資金を使用することでコミット数が何倍になったのかを計算する
+
+結果
+
+有効なプロジェクト数
+
+```
+# 基準より30日前、30日後で1回以上のコミットがあるプロジェクトの数
+30 days: 476
+# 基準より180日前、180日後で1回以上のコミットがあるプロジェクトの数
+180 days: 594
+```
+
+それぞれのプロジェクトについて、前後30日でコミット数が何倍になったかを計算
+
+41%のプロジェクトでコミット数が増加
+
+```
+[±30 days]
+projects: 476
+ratio mean (arithmetic): 1.5767109770894032
+ratio mean (geometric): 0.8930982407414004
+ratio median: 0.8768939393939393
+ratio > 1: 0.4117647058823529
+ratio < 1: 0.5504201680672269
+```
+
+それぞれのプロジェクトについて、前後180日でコミット数が何倍になったかを計算
+
+33%のプロジェクトでコミット数が増加
+
+```
+[±180 days]
+projects: 594
+ratio mean (arithmetic): 1.5325815018794329
+ratio mean (geometric): 0.68452081913977
+ratio median: 0.7533204610613773
+ratio > 1: 0.3282828282828283
+ratio < 1: 0.6632996632996633
+```
