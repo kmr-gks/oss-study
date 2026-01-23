@@ -4,25 +4,35 @@
 set client_encoding to UTF8;
 
 COPY (
-  WITH max_contribution AS (
+  WITH max_contribution_row AS (
     SELECT
       project_slug,
-      MIN(created_at) AS funding_time,
-      MAX(amount_value) AS max_contribution_usd
-    FROM collective_transactions
-    WHERE kind = 'CONTRIBUTION'
-      AND amount_currency = 'USD'
-    GROUP BY project_slug
+      created_at AS funding_time,
+      amount_value AS max_contribution_usd
+    FROM (
+      SELECT
+        project_slug,
+        created_at,
+        amount_value,
+        ROW_NUMBER() OVER (
+          PARTITION BY project_slug
+          ORDER BY amount_value DESC, created_at ASC
+        ) AS rn
+      FROM collective_transactions
+      WHERE kind = 'CONTRIBUTION'
+        AND amount_currency = 'USD'
+    ) t
+    WHERE rn = 1
   ),
   mapped AS (
     SELECT
-      mc.project_slug,
-      mc.funding_time,
-      mc.max_contribution_usd,
+      mcr.project_slug,
+      mcr.funding_time,
+      mcr.max_contribution_usd,
       REPLACE(col.github_account, '/', '-') AS repo_name_key
-    FROM max_contribution mc
+    FROM max_contribution_row mcr
     JOIN collectives col
-      ON col.slug = mc.project_slug
+      ON col.slug = mcr.project_slug
     WHERE col.github_account IS NOT NULL
   ),
   counts AS (
@@ -31,12 +41,12 @@ COPY (
       m.funding_time,
       m.max_contribution_usd,
       COUNT(*) FILTER (
-        WHERE c.author_time >= m.funding_time - INTERVAL '90 days'
+        WHERE c.author_time >= m.funding_time - INTERVAL '30 days'
           AND c.author_time <  m.funding_time
       ) AS commits_before,
       COUNT(*) FILTER (
         WHERE c.author_time >= m.funding_time
-          AND c.author_time <  m.funding_time + INTERVAL '90 days'
+          AND c.author_time <  m.funding_time + INTERVAL '30 days'
       ) AS commits_after
     FROM mapped m
     JOIN commit_history c
