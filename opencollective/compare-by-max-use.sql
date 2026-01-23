@@ -20,6 +20,7 @@ COPY (
         ) AS rn
       FROM collective_transactions
       WHERE kind = 'EXPENSE'
+        AND to_account_type = 'INDIVIDUAL'
         AND amount_currency = 'USD'
     ) t
     WHERE rn = 1
