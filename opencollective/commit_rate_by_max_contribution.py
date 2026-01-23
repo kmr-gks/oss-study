@@ -15,6 +15,8 @@ def load_and_clean(path):
     for c in num_cols:
         df[c] = pd.to_numeric(df[c], errors="coerce")
 
+    df["max_contribution_usd"] = df["max_contribution_usd"].abs()
+
     # 無効データ除外
     df = df[
         (df["commits_before"] > 0) &
@@ -25,8 +27,8 @@ def load_and_clean(path):
     return df
 
 
-df30  = load_and_clean("commit-num-by-30days-of-max-contribution.csv")
-df180 = load_and_clean("commit-num-by-180days-of-max-contribution.csv")
+df30  = load_and_clean("commit-num-by-30days-of-max-use.csv")
+df180 = load_and_clean("commit-num-by-180days-of-max-use.csv")
 
 print("30 days:", len(df30))
 print("180 days:", len(df180))
@@ -38,7 +40,7 @@ all_ratios = np.concatenate([
 xmin = np.nanmin(all_ratios)
 xmax = np.nanmax(all_ratios)
 
-bins = np.linspace(xmin, xmax, 100)
+bins = np.linspace(xmin, xmax, 300)
 
 fig, axes = plt.subplots(1, 2, figsize=(14, 5), sharey=True)
 
@@ -49,7 +51,7 @@ for ax, df, label in zip(
 ):
     ax.hist(df["ratio"], bins=bins)
     ax.axvline(1.0, color="red", linestyle="--", label="ratio = 1")
-    ax.set_xlim(xmin, xmax)
+    ax.set_xlim(xmin, 20)
     ax.set_yscale("log")
     ax.set_title(label)
     ax.set_xlabel("Commit activity ratio")
@@ -74,12 +76,14 @@ plt.scatter(
 )
 
 max_val = max(merged["ratio_30"].max(), merged["ratio_180"].max())
-plt.plot([0.1, max_val], [0.1, max_val], "r--")
+plt.plot([0.01, max_val], [0.01, max_val], "r--")
 
 plt.xscale("log")
 plt.yscale("log")
 plt.xlabel("Ratio (±30 days)")
 plt.ylabel("Ratio (±180 days)")
+plt.xlim(0.01, max_val)
+plt.ylim(0.01, max_val)
 plt.title("Short-term vs long-term impact of funding")
 plt.tight_layout()
 plt.savefig("short_vs_long_term_impact.png")
@@ -101,10 +105,10 @@ for ax, df, label in zip(
     ax.set_yscale("log")
     ax.axhline(1.0, color="red", linestyle="--")
     ax.set_title(label)
-    ax.set_xlabel("Max contribution (USD, log)")
+    ax.set_xlabel("Max usage (USD, log)")
 
 axes[0].set_ylabel("Commit activity ratio")
-fig.suptitle("Funding amount vs change in commit activity")
+fig.suptitle("Max usage event vs change in commit activity")
 plt.tight_layout()
 plt.savefig("funding_vs_commit_activity.png")
 plt.close()
@@ -114,6 +118,7 @@ def summarize(df, label):
     print("projects:", len(df))
     print("ratio mean (arith):", df["ratio"].mean())
     print("ratio mean (geom):", np.exp(np.log(df["ratio"]).mean()))
+    print("ratio median:", df["ratio"].median())
     print("ratio > 1:", (df["ratio"] > 1).mean())
     print("ratio < 1:", (df["ratio"] < 1).mean())
 
