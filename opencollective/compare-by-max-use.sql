@@ -1,7 +1,7 @@
 -- 各プロジェクトについて、最大の支出(expenseは負なので正確には最小値)を抽出する
 -- その最大のexpenseの前後30/180日間のコミット数を比較する
 
-set client_encoding to UTF8;
+-- set client_encoding to UTF8;
 
 COPY (
   WITH max_contribution_row AS (
