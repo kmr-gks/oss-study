@@ -48,12 +48,10 @@ python .\mine_commits.py
 psql -U postgres -d opencollective -f .\expense_ranking.sql
 psql -U postgres -d opencollective -f .\expense_amount_ranking.sql
 
-psql -U postgres -d opencollective -f .\compare-by-max-contribution.sql > commit-num-by-30days-of-max-contribution.csv
+psql -U postgres -d opencollective -f .\compare-by-max-contribution.sql > commit-num-by-30days-of-max-use.csv
 # change day value to 180 in compare-by-max-contribution.sql
-psql -U postgres -d opencollective -f .\compare-by-max-contribution.sql > commit-num-by-180days-of-max-contribution.csv
+psql -U postgres -d opencollective -f .\compare-by-max-contribution.sql > commit-num-by-180days-of-max-use.csv
 python .\commit_rate_by_max_contribution.py
-
-
 
 ```
 
