@@ -10,7 +10,8 @@ COPY (
       created_at AS funding_time,
       amount_value AS max_contribution_usd,
       to_account_slug AS to_account_slug,
-      to_account_name AS to_account_name
+      to_account_name AS to_account_name,
+      to_account_type AS to_account_type
     FROM (
       SELECT
         project_slug,
@@ -18,6 +19,7 @@ COPY (
         amount_value,
         to_account_slug,
         to_account_name,
+        to_account_type,
         ROW_NUMBER() OVER (
           PARTITION BY project_slug
           ORDER BY amount_value ASC, created_at ASC
@@ -36,6 +38,7 @@ COPY (
       mcr.max_contribution_usd,
       mcr.to_account_slug,
       mcr.to_account_name,
+      mcr.to_account_type,
       REPLACE(col.github_account, '/', '-') AS repo_name_key
     FROM max_contribution_row mcr
     JOIN collectives col
@@ -49,6 +52,7 @@ COPY (
       m.max_contribution_usd,
       m.to_account_slug,
       m.to_account_name,
+      m.to_account_type,
       COUNT(*) FILTER (
         WHERE c.author_time >= m.funding_time - INTERVAL '30 days'
           AND c.author_time <  m.funding_time
@@ -60,7 +64,7 @@ COPY (
     FROM mapped m
     JOIN commit_history c
       ON c.repo_name = m.repo_name_key
-    GROUP BY m.project_slug, m.funding_time, m.max_contribution_usd, m.to_account_slug, m.to_account_name
+    GROUP BY m.project_slug, m.funding_time, m.max_contribution_usd, m.to_account_slug, m.to_account_name, m.to_account_type
   )
   SELECT
     project_slug,
@@ -74,7 +78,8 @@ COPY (
       ELSE commits_after::numeric / commits_before
     END AS ratio,
     to_account_slug,
-    to_account_name
+    to_account_name,
+    to_account_type
   FROM counts
   ORDER BY project_slug
 ) TO STDOUT WITH CSV HEADER;
