@@ -113,6 +113,32 @@ plt.tight_layout()
 plt.savefig("funding_vs_commit_activity.png")
 plt.close()
 
+# before commits vs after commits
+fig, axes = plt.subplots(1, 2, figsize=(14, 7), sharey=True)
+for ax, df, label in zip(
+    axes,
+    [df30, df180],
+    ["±30 days", "±180 days"]
+):
+    ax.scatter(
+        df["commits_before"],
+        df["commits_after"],
+        alpha=0.4
+    )
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.plot(
+        [1, df[["commits_before", "commits_after"]].values.max()],
+        [1, df[["commits_before", "commits_after"]].values.max()],
+        "r--"
+    )
+    ax.set_title(label)
+    ax.set_xlabel("Commits before (log)")
+    axes[0].set_ylabel("Commits after (log)")
+    fig.suptitle("Commits before vs after max funding event")
+plt.tight_layout()
+plt.savefig("commits_before_vs_after.png", dpi=300)
+
 def summarize(df, label):
     print(f"\n[{label}]")
     print("projects:", len(df))
