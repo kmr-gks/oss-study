@@ -132,7 +132,7 @@
 
 収入、支出を含めたすべての取引を対象としたexpense_descriptionのランキング
 
-全体の9割以上がnullだが、一部のデータでは支払先（使い道）がわかる場合がある。
+全体の9割以上がnullだが、一部のデータでは支払先（使い道）がわかる場合がある：github, AWS, cloudflareなど
 
 `psql -U postgres -d opencollective -f .\count_expense_description.sql`
 
@@ -158,6 +158,8 @@
 | Virtual Card charge: AWS EMEA               | 77      |
 | Virtual Card charge: infomaniak.com         | 75      |
 | Cloudflare                                  | 72      |
+
+expense_tagsカラムで指定されているタグを集計
 
 `psql -U postgres -d opencollective -f .\count_expense_tags.sql`
 
