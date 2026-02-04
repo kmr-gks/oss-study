@@ -101,6 +101,10 @@
 | author_name     | text                        |
 | author_email    | text                        |
 
+収入、支出を含めたすべての取引を対象としたdescriptionのランキング
+
+抽象的な説明が多く、これだけでは資金提供、資金使用の理由は読み取れない。
+
 `psql -U postgres -d opencollective -f .\count_description.sql`
 
 | description                                                      | count  |
@@ -125,6 +129,10 @@
 | Monthly financial contribution to Jest (backer)                  | 7431   |
 | Monthly financial contribution to Qubes OS (Backers)             | 7253   |
 | Monthly financial contribution to nest (Backers ��)          | 7225   |
+
+収入、支出を含めたすべての取引を対象としたexpense_descriptionのランキング
+
+全体の9割以上がnullだが、一部のデータでは支払先（使い道）がわかる場合がある。
 
 `psql -U postgres -d opencollective -f .\count_expense_description.sql`
 
