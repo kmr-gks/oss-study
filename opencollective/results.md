@@ -229,6 +229,8 @@ kindの説明: [https://docs.opencollective.com/help/product/ledger/individual-t
 
 受け取った資金を何に使用しているか（どんな種類のアカウントに送金しているか）
 
+account_typeの説明: [https://docs.opencollective.com/help/about/terminology](https://docs.opencollective.com/help/about/terminology)
+
 ```sql
 SELECT to_account_type, COUNT(*) AS count
 FROM collective_transactions
@@ -282,6 +284,8 @@ LIMIT 20;
 `psql -U postgres -d opencollective -f .\expense_amount_ranking.sql`
 
 支出総額ランキング
+
+account_typeの説明: [https://docs.opencollective.com/help/about/terminology](https://docs.opencollective.com/help/about/terminology)
 
 ```sql
 SELECT to_account_type, count(*) AS count, SUM(amount_value) AS total_amount_value
