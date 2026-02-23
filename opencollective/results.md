@@ -4,12 +4,12 @@
 
     テーブル一覧
 
-| スキーマ | 名前                    | タイプ   | 所有者   |
-| -------- | ----------------------- | -------- | -------- |
-| public   | collective_expenses     | テーブル | postgres |
-| public   | collective_transactions | テーブル | postgres |
-| public   | collectives             | テーブル | postgres |
-| public   | commit_history          | テーブル | postgres |
+| スキーマ | 名前                    | タイプ   | 所有者   | 説明                                                                                                                                |
+| -------- | ----------------------- | -------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| public   | collective_expenses     | テーブル | postgres | OpenCollective APIでexpensesというクエリを使用してマイニングしたデータのテーブル。データ数が少なかった(271レコード)ため使用しない。 |
+| public   | collective_transactions | テーブル | postgres | transactionsというクエリを使用してマイニングしたデータのテーブル。238万件ある。                                                     |
+| public   | collectives             | テーブル | postgres | collectiveのテーブル。3476件ある。                                                                                                  |
+| public   | commit_history          | テーブル | postgres | collectiveに対応したリポジトリのコミット履歴。767万件ある。                                                                         |
 
 テーブルのcolumn一覧
 
