@@ -14,26 +14,26 @@
 
 `select * from information_schema.columns where table_name='collective_transactions';`
 
-| column_name         | 意味                                       | data_type                   |
-| ------------------- | ------------------------------------------ | --------------------------- |
-| amount_value        | 送金金額                                   | numeric                     |
-| created_at          | 送金時間                                   | timestamp without time zone |
-| expense_tags        | 支出の種類                                 | jsonb                       |
-| type                | 送金の種類(どういう形で支払いが発生したか) | text                        |
-| kind                | 送金の種類()                               | text                        |
-| description         | 説明文                                     | text                        |
-| amount_currency     | 通貨                                       | text                        |
-| id                  | id                                         | text                        |
-| from_account_name   | 送金元の名前                               | text                        |
-| from_account_type   | 送金元のタイプ                             | text                        |
-| to_account_slug     | 送金先                                     | text                        |
-| to_account_name     | 送金先の名前                               | text                        |
-| to_account_type     | 送金先のタイプ                             | text                        |
-| expense_type        |                                            | text                        |
-| expense_description |                                            | text                        |
-| from_account_slug   |                                            | text                        |
-| project_slug        |                                            | text                        |
-| project_name        |                                            | text                        |
+| column_name         | 意味                                                                         | data_type                   |
+| ------------------- | ---------------------------------------------------------------------------- | --------------------------- |
+| amount_value        | 送金金額                                                                     | numeric                     |
+| created_at          | 送金時間                                                                     | timestamp without time zone |
+| expense_tags        | 支出の種類(OpenCollectiveによって定義された値ではなく、自然言語で表現される) | jsonb                       |
+| type                | debit or credit(収入か支出を区別する)                                        | text                        |
+| kind                | 送金の種類(資金の受け取りか、資金の使用か、手数料の支払いかを区別する)       | text                        |
+| description         | 説明文(自然言語)                                                             | text                        |
+| amount_currency     | 通貨                                                                         | text                        |
+| id                  | id                                                                           | text                        |
+| from_account_name   | 送金元の名前                                                                 | text                        |
+| from_account_type   | 送金元のタイプ                                                               | text                        |
+| to_account_slug     | 送金先のスラグ(一意に区別する文字列)                                         | text                        |
+| to_account_name     | 送金先の名前                                                                 | text                        |
+| to_account_type     | 送金先のタイプ                                                               | text                        |
+| expense_type        | 送金の種類(どういう形で支払いが発生したか)                                   | text                        |
+| expense_description | 説明文(自然言語)                                                             | text                        |
+| from_account_slug   | 送金元のスラグ(一意に区別する文字列)                                         | text                        |
+| project_slug        | プロジェクトのスラグ(一意に区別する文字列)                                   | text                        |
+| project_name        | プロジェクト名                                                               | text                        |
 
 `select * from information_schema.columns where table_name='collectives';`
 
@@ -193,18 +193,18 @@ kindの説明: [https://docs.opencollective.com/help/product/ledger/individual-t
 
  `psql -U postgres -d opencollective -f .\count_kind.sql`
 
-| kind                    | description                                                                                                                                                                         | count   | total_amount_value(USD) |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ----------------------- |
-| CONTRIBUTION            | Records a contribution made through the platform.                                                                                                                                   | 1080778 | 42499620.50             |
-| HOST_FEE                | Records a host fee allocated to the host in relation either a CONTRIBUTION or ADDED_FUNDS                                                                                           | 825224  | -5145731.71             |
-| PAYMENT_PROCESSOR_FEE   | Records a fee charged by a payment processor.                                                                                                                                       | 413958  | -664918.74              |
-| EXPENSE                 | Records an expense made through the platform.                                                                                                                                       | 50458   | -74319625.39            |
-| ADDED_FUNDS             | Funds that have been added to a collective account by a fiscal host.                                                                                                                | 14522   | 65255380.16             |
-| PAYMENT_PROCESSOR_COVER | Records payment processor fees that are covered by a fiscal host when a transaction is refunded (the payment processor do not refund the fees related to the original transaction). | 3383    | 10571.91                |
-| BALANCE_TRANSFER        | Usually done when emptying balance (Collective to Host, Project or Event to Collective). Or in some cases, moving balance between Fiscal Hosts.                                     | 974     | -812051.16              |
-| PREPAID_PAYMENT_METHOD  | [LEGACY] records a transaction used for implementing gift cards.                                                                                                                    | 45      | 126457.86               |
-| TAX                     |                                                                                                                                                                                     | 19      | -468.50                 |
-| PLATFORM_TIP            | Records a platform tip added by a contributor to their contribution.                                                                                                                | 1       | -50                     |
+| kind                    | description                                                                                                                                                                                                      | count   | total_amount_value(USD) |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ----------------------- |
+| CONTRIBUTION            | Records a contribution made through the platform. 資金流入                                                                                                                                                       | 1080778 | 42499620.50             |
+| HOST_FEE                | Records a host fee allocated to the host in relation either a CONTRIBUTION or ADDED_FUNDS (会計ホストへの)手数料                                                                                                 | 825224  | -5145731.71             |
+| PAYMENT_PROCESSOR_FEE   | Records a fee charged by a payment processor.手数料(stripe, paypalへの)                                                                                                                                          | 413958  | -664918.74              |
+| EXPENSE                 | Records an expense made through the platform.支出                                                                                                                                                                | 50458   | -74319625.39            |
+| ADDED_FUNDS             | Funds that have been added to a collective account by a fiscal host.資金流入(会計ホストから)                                                                                                                     | 14522   | 65255380.16             |
+| PAYMENT_PROCESSOR_COVER | Records payment processor fees that are covered by a fiscal host when a transaction is refunded (the payment processor do not refund the fees related to the original transaction). 取引キャンセル時の手数料返還 | 3383    | 10571.91                |
+| BALANCE_TRANSFER        | Usually done when emptying balance (Collective to Host, Project or Event to Collective). Or in some cases, moving balance between Fiscal Hosts. プロジェクト、コレクティブ間の資金移動                           | 974     | -812051.16              |
+| PREPAID_PAYMENT_METHOD  | [LEGACY] records a transaction used for implementing gift cards.                                                                                                                                                 | 45      | 126457.86               |
+| TAX                     |                                                                                                                                                                                                                  | 19      | -468.50                 |
+| PLATFORM_TIP            | Records a platform tip added by a contributor to their contribution.                                                                                                                                             | 1       | -50                     |
 
 `psql -U postgres -d opencollective -f .\expense_ranking.sql`
 
