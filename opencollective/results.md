@@ -4,55 +4,36 @@
 
     テーブル一覧
 
-| スキーマ | 名前                    | タイプ   | 所有者   | 説明                                                                                                                                |
-| -------- | ----------------------- | -------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| public   | collective_expenses     | テーブル | postgres | OpenCollective APIでexpensesというクエリを使用してマイニングしたデータのテーブル。データ数が少なかった(271レコード)ため使用しない。 |
-| public   | collective_transactions | テーブル | postgres | transactionsというクエリを使用してマイニングしたデータのテーブル。238万件ある。                                                     |
-| public   | collectives             | テーブル | postgres | collectiveのテーブル。3476件ある。                                                                                                  |
-| public   | commit_history          | テーブル | postgres | collectiveに対応したリポジトリのコミット履歴。767万件ある。                                                                         |
+| スキーマ | 名前                    | タイプ   | 所有者   | 説明                                                                            |
+| -------- | ----------------------- | -------- | -------- | ------------------------------------------------------------------------------- |
+| public   | collective_transactions | テーブル | postgres | transactionsというクエリを使用してマイニングしたデータのテーブル。238万件ある。 |
+| public   | collectives             | テーブル | postgres | collectiveのテーブル。3476件ある。                                              |
+| public   | commit_history          | テーブル | postgres | collectiveに対応したリポジトリのコミット履歴。767万件ある。                     |
 
 テーブルのcolumn一覧
 
-`select * from information_schema.columns where table_name='collective_expenses';`
-
-| column_name     | data_type                   |
-| --------------- | --------------------------- |
-| tags            | jsonb                       |
-| amount_value    | numeric                     |
-| created_at      | timestamp without time zone |
-| incurred_at     | timestamp without time zone |
-| description     | text                        |
-| amount_currency | text                        |
-| payee_name      | text                        |
-| payee_slug      | text                        |
-| id              | text                        |
-| status          | text                        |
-| project_slug    | text                        |
-| project_name    | text                        |
-| type            | text                        |
-
 `select * from information_schema.columns where table_name='collective_transactions';`
 
-| column_name         | data_type                   |
-| ------------------- | --------------------------- |
-| amount_value        | numeric                     |
-| created_at          | timestamp without time zone |
-| expense_tags        | jsonb                       |
-| type                | text                        |
-| kind                | text                        |
-| description         | text                        |
-| amount_currency     | text                        |
-| id                  | text                        |
-| from_account_name   | text                        |
-| from_account_type   | text                        |
-| to_account_slug     | text                        |
-| to_account_name     | text                        |
-| to_account_type     | text                        |
-| expense_type        | text                        |
-| expense_description | text                        |
-| from_account_slug   | text                        |
-| project_slug        | text                        |
-| project_name        | text                        |
+| column_name         | 意味                                       | data_type                   |
+| ------------------- | ------------------------------------------ | --------------------------- |
+| amount_value        | 送金金額                                   | numeric                     |
+| created_at          | 送金時間                                   | timestamp without time zone |
+| expense_tags        | 支出の種類                                 | jsonb                       |
+| type                | 送金の種類(どういう形で支払いが発生したか) | text                        |
+| kind                | 送金の種類()                               | text                        |
+| description         | 説明文                                     | text                        |
+| amount_currency     | 通貨                                       | text                        |
+| id                  | id                                         | text                        |
+| from_account_name   | 送金元の名前                               | text                        |
+| from_account_type   | 送金元のタイプ                             | text                        |
+| to_account_slug     | 送金先                                     | text                        |
+| to_account_name     | 送金先の名前                               | text                        |
+| to_account_type     | 送金先のタイプ                             | text                        |
+| expense_type        |                                            | text                        |
+| expense_description |                                            | text                        |
+| from_account_slug   |                                            | text                        |
+| project_slug        |                                            | text                        |
+| project_name        |                                            | text                        |
 
 `select * from information_schema.columns where table_name='collectives';`
 
@@ -196,15 +177,15 @@ expense_typeで指定されているタグを集計
 
 `psql -U postgres -d opencollective -f .\count_expense_type.sql`
 
-| expense_type | description                                                                               | count   |
-| ------------ | ----------------------------------------------------------------------------------------- | ------- |
-| [null]       |                                                                                           | 2326366 |
-| INVOICE      | Charge for your time or get paid in advance. 開発者に支払われるお金                       | 31059   |
-| RECEIPT      | Get paid back for a purchase already made.                                                | 22156   |
-| CHARGE       | Payment done using an issued (virtual) credit card issued by your Fiscal Host. インフラ代 | 5995    |
-| UNCLASSIFIED | Unclassified expense                                                                      | 2336    |
-| GRANT        | Request funding for a project or initiative.                                              | 1447    |
-| SETTLEMENT   | expense generated by Open Collective to collect money owed by Fiscal Hosts.               | 3       |
+| expense_type | description                                                                                                                   | count   |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------- | ------- |
+| [null]       |                                                                                                                               | 2326366 |
+| INVOICE      | Charge for your time or get paid in advance. 開発者に(前もって)支払われるお金、人件費                                         | 31059   |
+| RECEIPT      | Get paid back for a purchase already made.後から払う費用、人件費以外と思われる                                                | 22156   |
+| CHARGE       | Payment done using an issued (virtual) credit card issued by your Fiscal Host. 会計ホストが発行したカードで支払い、インフラ代 | 5995    |
+| UNCLASSIFIED | Unclassified expense                                                                                                          | 2336    |
+| GRANT        | Request funding for a project or initiative. 他の開発者、グループに払ったお金                                                 | 1447    |
+| SETTLEMENT   | expense generated by Open Collective to collect money owed by Fiscal Hosts.                                                   | 3       |
 
 kindで指定されるタグを集計
 
