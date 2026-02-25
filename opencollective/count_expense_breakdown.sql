@@ -40,8 +40,7 @@ classified AS (
         coalesce(to_account_name,'') ILIKE '%CLOUDFLARE%' OR
         coalesce(to_account_name,'') ILIKE '%HETZNER%' OR
         coalesce(to_account_name,'') ILIKE '%GOOGLE CLOUD%' OR
-        coalesce(to_account_name,'') ILIKE '%AZURE%' OR
-        coalesce(expense_description,'') ILIKE '%Virtual Card charge:%'
+        coalesce(to_account_name,'') ILIKE '%AZURE%'
       ) THEN 'CLOUD_OR_SAAS'
 
       WHEN to_account_type = 'VENDOR' AND (
@@ -94,8 +93,8 @@ SELECT
   l1_payee,
   l2_use,
   COUNT(*) AS n_records,
-  SUM(amount_value) AS sum_amount
+  SUM(amount_value) AS sum_amount_USD
 FROM classified
 where amount_currency='USD'
 GROUP BY l1_payee, l2_use
-ORDER BY l1_payee, sum_amount DESC;
+ORDER BY l1_payee, sum_amount_USD DESC;
