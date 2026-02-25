@@ -69,24 +69,21 @@ Columns of collectives
 
 Columns of commit_history
 
-| column_name     | data_type                   |
-| --------------- | --------------------------- |
-| author_time     | timestamp without time zone |
-| commit_time     | timestamp without time zone |
-| files_changed   | integer                     |
-| insertions      | integer                     |
-| deletions       | integer                     |
-| mined_at        | timestamp without time zone |
-| committer_name  | text                        |
-| repo_path       | text                        |
-| subject         | text                        |
-| body            | text                        |
-| committer_email | text                        |
-| repo_name       | text                        |
-| commit_hash     | text                        |
-| parent_hashes   | text                        |
-| author_name     | text                        |
-| author_email    | text                        |
+| column_name     | 意味                                     | data_type                   |
+| --------------- | ---------------------------------------- | --------------------------- |
+| author_name     | コミットの編集を行った人                 | text                        |
+| author_email    | メールアドレス                           | text                        |
+| author_time     | 最初にコミットが行われた日時             | timestamp without time zone |
+| committer_name  | コミットの編集をした人                   | text                        |
+| committer_email | メールアドレス                           | text                        |
+| commit_time     | コミットの編集(rebaseなど)が行われた日時 | timestamp without time zone |
+| mined_at        | マイニングを行った日時                   | timestamp without time zone |
+| repo_path       | リポジトリのパス                         | text                        |
+| subject         | コミットメッセージ                       | text                        |
+| body            | コミットの説明文                         | text                        |
+| repo_name       | リポジトリ名                             | text                        |
+| commit_hash     | コミットハッシュ                         | text                        |
+| parent_hashes   | 親コミットのハッシュ                     | text                        |
 
 収入、支出を含めたすべての取引を対象としたdescriptionのランキング
 
