@@ -14,15 +14,17 @@
 
 `select * from information_schema.columns where table_name='collective_transactions';`
 
+Columns of collective_transactions
+
 | column_name         | 意味                                                                         | data_type                   |
 | ------------------- | ---------------------------------------------------------------------------- | --------------------------- |
 | amount_value        | 送金金額                                                                     | numeric                     |
+| amount_currency     | 通貨                                                                         | text                        |
 | created_at          | 送金時間                                                                     | timestamp without time zone |
 | expense_tags        | 支出の種類(OpenCollectiveによって定義された値ではなく、自然言語で表現される) | jsonb                       |
 | type                | debit or credit(収入か支出を区別する)                                        | text                        |
 | kind                | 送金の種類(資金の受け取りか、資金の使用か、手数料の支払いかを区別する)       | text                        |
 | description         | 説明文(自然言語)                                                             | text                        |
-| amount_currency     | 通貨                                                                         | text                        |
 | id                  | id                                                                           | text                        |
 | from_account_name   | 送金元の名前                                                                 | text                        |
 | from_account_type   | 送金元のタイプ                                                               | text                        |
@@ -37,31 +39,35 @@
 
 `select * from information_schema.columns where table_name='collectives';`
 
-| column_name             | data_type                   |
-| ----------------------- | --------------------------- |
-| is_active               | boolean                     |
-| total_spent_value       | numeric                     |
-| social_links            | jsonb                       |
-| yearly_budget_value     | numeric                     |
-| balance_value           | numeric                     |
-| created_at              | timestamp without time zone |
-| total_received_value    | numeric                     |
-| twitter_handle          | text                        |
-| balance_currency        | text                        |
-| total_received_currency | text                        |
-| total_spent_currency    | text                        |
-| yearly_budget_currency  | text                        |
-| host_slug               | text                        |
-| id                      | text                        |
-| github_account          | text                        |
-| slug                    | text                        |
-| name                    | text                        |
-| type                    | text                        |
-| description             | text                        |
-| website                 | text                        |
-| github_handle           | text                        |
+Columns of collectives
+
+| column_name             | 意味                                                                                                   | data_type                   |
+| ----------------------- | ------------------------------------------------------------------------------------------------------ | --------------------------- |
+| is_active               | アクティブかどうか(3476個のコレクティブの中で、アクティブでないものは1個だった)                        | boolean                     |
+| total_spent_value       | 今までの支出の累計金額                                                                                 | numeric                     |
+| total_spent_currency    | 通貨                                                                                                   |                             |
+| social_links            | ソーシャルメディア(Webサイト, github, twitterなど)のリンク                                             | jsonb                       |
+| yearly_budget_value     | 1年間に受け取る資金の予想金額 (https://docs.opencollective.com/help/collectives/budget?q=yearlyBudget) | numeric                     |
+| yearly_budget_currency  | 通貨                                                                                                   |                             |
+| balance_value           | 残高                                                                                                   | numeric                     |
+| balance_currency        | 通貨                                                                                                   |                             |
+| created_at              | 登録日                                                                                                 | timestamp without time zone |
+| total_received_value    | 今まで受け取った金額                                                                                   | numeric                     |
+| total_received_currency | 通貨                                                                                                   |                             |
+| twitter_handle          | twitterの登録名                                                                                        | text                        |
+| host_slug               | fiscal hostのこと。今回はhost_slugがopensourceのものを対象にしている。                                 | text                        |
+| id                      | collectiveのid                                                                                         | text                        |
+| github_account          | githubアカウント                                                                                       | text                        |
+| slug                    | collectiveのslug                                                                                       | text                        |
+| name                    | collectiveの名前                                                                                       | text                        |
+| type                    | collective, projectなどの種類                                                                          | text                        |
+| description             | 説明文                                                                                                 | text                        |
+| website                 | ウェブサイトのURL                                                                                      | text                        |
+| github_handle           | githubのアカウント                                                                                     | text                        |
 
 `select * from information_schema.columns where table_name='commit_history';`
+
+Columns of commit_history
 
 | column_name     | data_type                   |
 | --------------- | --------------------------- |
