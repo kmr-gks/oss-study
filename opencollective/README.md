@@ -53,6 +53,10 @@ psql -U postgres -d opencollective -f .\compare-by-max-contribution.sql > commit
 psql -U postgres -d opencollective -f .\compare-by-max-contribution.sql > commit-num-by-180days-of-max-use.csv
 python .\commit_rate_by_max_contribution.py
 
+#rule-based labeling
+psql -U postgres -d opencollective -f .\count_expense_breakdown.sql >results.txt
+#random sampling for manual labeling
+psql -U postgres -d opencollective -f .\random_sampling.sql > label_sample_expense_100.csv
 ```
 
 ## ファイル構成
