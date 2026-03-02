@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+dpi=100
+
 def load_and_clean(path):
     df = pd.read_csv(path)
 
@@ -25,7 +27,6 @@ def load_and_clean(path):
         (df["max_contribution_usd"] > 0)
     ]
     return df
-
 
 df30  = load_and_clean("commit-num-by-30days-of-max-use.csv")
 df180 = load_and_clean("commit-num-by-180days-of-max-use.csv")
@@ -59,7 +60,7 @@ for ax, df, label in zip(
 axes[0].set_ylabel("Number of projects (log scale)")
 fig.suptitle("Distribution of commit activity change around max funding event")
 plt.tight_layout()
-plt.savefig("commit_activity_ratio_histogram.png", dpi=300)
+plt.savefig("commit_activity_ratio_histogram.png", dpi=dpi)
 plt.close()
 
 merged = df30.merge(
@@ -86,7 +87,7 @@ plt.xlim(0.01, max_val)
 plt.ylim(0.01, max_val)
 plt.title("Short-term vs long-term impact of funding")
 plt.tight_layout()
-plt.savefig("short_vs_long_term_impact.png")
+plt.savefig("short_vs_long_term_impact.png", dpi=dpi)
 plt.close()
 
 fig, axes = plt.subplots(1, 2, figsize=(14, 5), sharey=True)
@@ -110,7 +111,7 @@ for ax, df, label in zip(
 axes[0].set_ylabel("Commit activity ratio")
 fig.suptitle("Max usage event vs change in commit activity")
 plt.tight_layout()
-plt.savefig("funding_vs_commit_activity.png")
+plt.savefig("funding_vs_commit_activity.png", dpi=dpi)
 plt.close()
 
 # before commits vs after commits
@@ -137,7 +138,7 @@ for ax, df, label in zip(
     axes[0].set_ylabel("Commits after (log)")
     fig.suptitle("Commits before vs after max funding event")
 plt.tight_layout()
-plt.savefig("commits_before_vs_after.png", dpi=300)
+plt.savefig("commits_before_vs_after.png", dpi=dpi)
 
 def summarize(df, label):
     print(f"\n[{label}]")

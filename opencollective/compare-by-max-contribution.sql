@@ -1,8 +1,6 @@
 -- 各プロジェクトについて、最大金額のcontributionを抽出する
 -- その最大のコントリビューションの前後のコミット数を比較する。
 
-set client_encoding to UTF8;
-
 COPY (
   WITH max_contribution_row AS (
     SELECT
@@ -41,12 +39,12 @@ COPY (
       m.funding_time,
       m.max_contribution_usd,
       COUNT(*) FILTER (
-        WHERE c.author_time >= m.funding_time - INTERVAL '30 days'
+        WHERE c.author_time >= m.funding_time - INTERVAL :var1
           AND c.author_time <  m.funding_time
       ) AS commits_before,
       COUNT(*) FILTER (
         WHERE c.author_time >= m.funding_time
-          AND c.author_time <  m.funding_time + INTERVAL '30 days'
+          AND c.author_time <  m.funding_time + INTERVAL :var1
       ) AS commits_after
     FROM mapped m
     JOIN commit_history c
