@@ -54,12 +54,12 @@ COPY (
       m.to_account_name,
       m.to_account_type,
       COUNT(*) FILTER (
-        WHERE c.author_time >= m.funding_time - INTERVAL '30 days'
+        WHERE c.author_time >= m.funding_time - INTERVAL :var1
           AND c.author_time <  m.funding_time
       ) AS commits_before,
       COUNT(*) FILTER (
         WHERE c.author_time >= m.funding_time
-          AND c.author_time <  m.funding_time + INTERVAL '30 days'
+          AND c.author_time <  m.funding_time + INTERVAL :var1
       ) AS commits_after
     FROM mapped m
     JOIN commit_history c
