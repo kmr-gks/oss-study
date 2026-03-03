@@ -145,32 +145,33 @@ Columns of commit_history
 
 expense_tagsで指定されているタグを集計
 
-全体の9割以上がnullだが、一部のデータでweb setvicesやtravelなど具体的な説明がなされている。
+支出のデータを対象にして、タグの値を調査した。
+一部のデータでweb setvicesやtravelなど具体的な説明がなされている。
 
 `psql -U postgres -d opencollective -f .\count_expense_tags.sql`
 
-| tag                  | count   |
-| -------------------- | ------- |
-| []                   | 2372450 |
-| engineering          | 2536    |
-| web services         | 1172    |
-| travel               | 620     |
-| infrastructure       | 612     |
-| communications       | 437     |
-| food & beverage      | 365     |
-| hardware             | 350     |
-| core developer       | 321     |
-| hosting              | 315     |
-| development          | 271     |
-| bounty               | 221     |
-| marketing            | 211     |
-| supplies & materials | 189     |
-| maintainer-stipend   | 170     |
-| infra                | 170     |
-| samu, approved       | 169     |
-| software             | 153     |
-| other                | 147     |
-| tepi, approved       | 146     |
+| expense_tags                                   | count |
+| ---------------------------------------------- | ----- |
+| (null)                                         | 36433 |
+| engineering                                    | 2338  |
+| web services                                   | 1097  |
+| travel                                         | 585   |
+| infrastructure                                 | 571   |
+| communications                                 | 434   |
+| food & beverage                                | 364   |
+| hardware                                       | 262   |
+| hosting                                        | 240   |
+| core developer                                 | 222   |
+| marketing                                      | 198   |
+| development                                    | 195   |
+| supplies & materials                           | 185   |
+| other                                          | 147   |
+| bounty                                         | 136   |
+| holiday gift drive, m, aor, mmip family, aor-m | 131   |
+| software                                       | 129   |
+| office                                         | 125   |
+| team                                           | 123   |
+| aws                                            | 105   |
 
 expense_typeで指定されているタグを集計
 
