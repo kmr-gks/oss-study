@@ -373,19 +373,17 @@ ratio < 1: 0.6724436741767764
 
 受け取った資金の使い道分析
 collective_transactionsのレコードのうち、kind = 'EXPENSE'のものを対象にし、ルールベースで分類した。
-psql -U postgres -d opencollective -f .\count_expense_breakdown.sql >results.txt
+`psql -U postgres -d opencollective -f .\count_expense_breakdown.sql >results.txt`
 
-
-   l1_payee   |      l2_use      | n_records | sum_amount_usd 
---------------+------------------+-----------+----------------
- INDIVIDUAL   | INDIVIDUAL_OTHER |     14265 |    -5496780.13
- INDIVIDUAL   | COMPENSATION     |     18488 |   -31702794.38
- ORGANIZATION | MARKETING        |        18 |       -8195.49
- ORGANIZATION | INFRA            |       119 |     -269162.02
- ORGANIZATION | GOVERNANCE       |        31 |     -277295.79
- ORGANIZATION | ORG_OTHER        |      3876 |   -15590876.88
- OTHER        | UNKNOWN          |        30 |       -4924.64
- VENDOR       | ECOMMERCE        |       159 |      -44086.03
- VENDOR       | CLOUD_OR_SAAS    |      1959 |     -181326.89
- VENDOR       | VENDOR_OTHER     |      4448 |    -4360332.87
-
+| FROM collective_transactions | Purpose          | Transaction Count | Amount (USD) |
+| ---------------------------- | ---------------- | ----------------- | ------------ |
+| INDIVIDUAL                   | INDIVIDUAL_OTHER | 14265             | -5496780.13  |
+| INDIVIDUAL                   | COMPENSATION     | 18488             | -31702794.38 |
+| ORGANIZATION                 | MARKETING        | 18                | -8195.49     |
+| ORGANIZATION                 | INFRA            | 119               | -269162.02   |
+| ORGANIZATION                 | GOVERNANCE       | 31                | -277295.79   |
+| ORGANIZATION                 | ORG_OTHER        | 3876              | -15590876.88 |
+| OTHER                        | UNKNOWN          | 30                | -4924.64     |
+| VENDOR                       | ECOMMERCE        | 159               | -44086.03    |
+| VENDOR                       | CLOUD_OR_SAAS    | 1959              | -181326.89   |
+| VENDOR                       | VENDOR_OTHER     | 4448              | -4360332.87  |
