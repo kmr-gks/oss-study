@@ -152,25 +152,25 @@ expense_tagsで指定されているタグを集計
 | tag                  | count   |
 | -------------------- | ------- |
 | []                   | 2372450 |
-| engineering          | 2610    |
-| web services         | 1212    |
-| travel               | 765     |
-| infrastructure       | 752     |
-| approved             | 489     |
-| communications       | 470     |
-| hosting              | 404     |
-| food & beverage      | 381     |
-| hardware             | 380     |
-| development          | 355     |
+| engineering          | 2536    |
+| web services         | 1172    |
+| travel               | 620     |
+| infrastructure       | 612     |
+| communications       | 437     |
+| food & beverage      | 365     |
+| hardware             | 350     |
 | core developer       | 321     |
-| marketing            | 293     |
-| bounty               | 222     |
-| team                 | 219     |
-| supplies & materials | 200     |
-| infra                | 200     |
-| samu                 | 187     |
-| aws                  | 181     |
+| hosting              | 315     |
+| development          | 271     |
+| bounty               | 221     |
+| marketing            | 211     |
+| supplies & materials | 189     |
 | maintainer-stipend   | 170     |
+| infra                | 170     |
+| samu, approved       | 169     |
+| software             | 153     |
+| other                | 147     |
+| tepi, approved       | 146     |
 
 expense_typeで指定されているタグを集計
 
