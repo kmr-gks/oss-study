@@ -56,6 +56,9 @@ python .\commit_rate_by_max_contribution.py
 psql -U postgres -d opencollective -f .\count_expense_breakdown.sql >results.txt
 #random sampling for manual labeling
 psql -U postgres -d opencollective -f .\random_sampling.sql > label_sample_expense_100.csv
+
+#教師あり学習を行うため支出のデータをcsvに出力
+psql -U postgres -d opencollective -f .\export_transactions.sql > transactions.csv
 ```
 
 ## ファイル構成
