@@ -173,6 +173,34 @@ expense_tagsで指定されているタグを集計
 | team                                           | 123   |
 | aws                                            | 105   |
 
+金額ベースで調査
+expense_tagsで指定されているそれぞれのタグについて、支出の総額(USD)を集計した。
+
+`psql -U postgres -d opencollective -f .\count_expense_value.sql`
+
+| expense_tags         | count | total_usd   |
+| -------------------- | ----- | ----------- |
+| (null)               | 30743 | 45292184.98 |
+| engineering          | 2317  | 4964367.65  |
+| core developer       | 222   | 1038784.75  |
+| maintenance          | 85    | 459741.33   |
+| communications       | 434   | 282103.83   |
+| travel               | 577   | 244007.66   |
+| employment           | 23    | 223536.73   |
+| other                | 147   | 197021.29   |
+| coordination         | 48    | 164472.07   |
+| core-coordinated     | 35    | 155765.58   |
+| nsf-oac1835443       | 5     | 152026      |
+| infrastructure       | 571   | 146135.18   |
+| development          | 186   | 141636.77   |
+| subcontract          | 11    | 136415.50   |
+| project_manager      | 17    | 134922.5    |
+| salary               | 34    | 104359.20   |
+| engine               | 32    | 96157.9     |
+| supplies & materials | 185   | 92701.35    |
+| marketing            | 198   | 82276.18    |
+| maintainer-stipend   | 85    | 82189.94    |
+
 expense_typeで指定されているタグを集計
 
 全体の9割以上がnullであり、一部のデータでINVOICEやRECEIPTが指定されているが、資金の具体的な使い道はわからなかった。
