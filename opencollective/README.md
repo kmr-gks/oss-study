@@ -59,6 +59,9 @@ psql -U postgres -d opencollective -f .\random_sampling.sql > label_sample_expen
 
 #教師あり学習を行うため支出のデータをcsvに出力
 psql -U postgres -d opencollective -f .\export_transactions.sql > transactions.csv
+#ラベル分類を実施
+python .\ml-labeling.py
+
 ```
 
 ## ファイル構成

@@ -20,12 +20,24 @@ from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+import json
 
 # =========================
 # 1. CSV読み込み
 # =========================
 transactions = pd.read_csv("transactions.csv")
 tag_map = pd.read_csv("bigcategory_map.csv")
+
+# タグをパースする関数
+def parse_tag(tag):
+    try:
+        tags = json.loads(tag)
+        if len(tags) == 0:
+            return None
+        return tags[0]   # 最初のタグだけ使う
+    except:
+        return None
+transactions["expense_tags"] = transactions["expense_tags"].apply(parse_tag)
 
 # 列名の前後空白対策
 transactions.columns = transactions.columns.str.strip()
