@@ -61,6 +61,8 @@ psql -U postgres -d opencollective -f .\random_sampling.sql > label_sample_expen
 psql -U postgres -d opencollective -f .\export_transactions.sql > transactions.csv
 #ラベル分類を実施
 python .\ml-labeling.py
+#分類結果をまとめる
+python .\expense-labeling-results.py
 
 ```
 
