@@ -178,9 +178,5 @@ labeled_test_result = labeled.loc[idx_test].copy()
 labeled_test_result["true_label"] = y_test.values
 labeled_test_result["pred_label"] = y_pred
 
-# text列は不要なら削除
-if "text" in labeled_test_result.columns:
-    labeled_test_result = labeled_test_result.drop(columns=["text"])
-
 labeled_test_result.to_csv("test_predictions.csv", index=False, encoding="utf-8-sig")
 print("Saved: test_predictions.csv")
