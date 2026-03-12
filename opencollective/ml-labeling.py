@@ -102,9 +102,10 @@ y = labeled["big_category"]
 # =========================
 # 4. train / test に分割
 # =========================
-X_train, X_test, y_train, y_test = train_test_split(
+X_train, X_test, y_train, y_test, idx_train, idx_test = train_test_split(
     X,
     y,
+    labeled.index,
     test_size=0.2,
     random_state=42,
     stratify=y
@@ -172,10 +173,14 @@ if len(unlabeled) > 0:
 # =========================
 # 8. 教師データ側の予測結果も保存
 # =========================
-labeled_test_result = pd.DataFrame({
-    "text": X_test,
-    "true_label": y_test,
-    "pred_label": y_pred
-})
+labeled_test_result = labeled.loc[idx_test].copy()
+
+labeled_test_result["true_label"] = y_test.values
+labeled_test_result["pred_label"] = y_pred
+
+# text列は不要なら削除
+if "text" in labeled_test_result.columns:
+    labeled_test_result = labeled_test_result.drop(columns=["text"])
+
 labeled_test_result.to_csv("test_predictions.csv", index=False, encoding="utf-8-sig")
 print("Saved: test_predictions.csv")
