@@ -82,9 +82,7 @@ Kind,account_typeの意味
 
 テーブルのカラム一覧とその意味
 
-
 2026年2月18日
-
 
 Kind,account_typeの意味
 
@@ -104,3 +102,15 @@ kind=expenseのデータのうち、個人は何%か、オーガニゼーショ�
 expense_tagsのランキングのうち、同じものをマージする。
 
 Rq1,rq2に取り組む
+
+
+2026年3月13日
+
+SELECT * FROM public.collective_transactions
+where kind = 'EXPENSE';
+
+このデータを元にする。
+
+expense_tagsを元に、機械学習を利用して資金使用データを大分類し直すことはできた。次に、expense_descriptionを元にLLMを使用して大分類し直す。
+
+手動でいくつかのdescriptionを選んで、LLMに投げて良い分類ができるようにプロンプトチューニングする。
