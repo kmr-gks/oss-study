@@ -71,6 +71,7 @@ print("All rows:", len(df))
 print("Labeled rows:", len(labeled))
 print("\nCategory distribution:")
 print(labeled["big_category"].value_counts())
+print("Total labeled rows:", labeled["big_category"].count())
 
 # =========================
 # 3. 特徴量テキスト作成
@@ -165,6 +166,9 @@ if len(unlabeled) > 0:
     unlabeled["prediction_confidence"] = proba.max(axis=1)
 
     print("\nUnlabeled rows predicted:", len(unlabeled))
+    print("Category distribution of predicted unlabeled rows:")
+    print(unlabeled["predicted_big_category"].value_counts())
+    print("Total predicted rows:", unlabeled["predicted_big_category"].count())
 
     # 保存
     unlabeled.to_csv("unlabeled_predicted.csv", index=False, encoding="utf-8-sig")
