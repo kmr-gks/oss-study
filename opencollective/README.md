@@ -64,6 +64,9 @@ python .\ml-labeling.py
 #分類結果をまとめる
 python .\expense-labeling-results.py
 
+#labeling by using LLM
+psql -U postgres -d opencollective -f .\select_rows_randomly.sql > expenses_random_order.csv
+
 ```
 
 ## ファイル構成
