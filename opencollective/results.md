@@ -425,17 +425,32 @@ where kind = 'EXPENSE';
 
 ログイン不要のChatGPTを使用
 First input:
-Determine how an open-source organization is using the funds it has received.
-I will now provide you with strings recorded in the `expense_description` field of OpenCollective’s funding history. Output a CSV file indicating which of the following broad categories each expense falls under. However, even if the description is corrupted or cannot be classified, please provide your answer without deleting the data.
-development
-infra
-communication
-governance
-travel
-supplies
-marketing
-food
-other
+You are classifying OpenCollective expense descriptions into one of the following categories.
+
+Categories:
+- development: payments for software development, engineering, maintenance, bug fixes, bounties, coding, technical leadership, developer stipends, contractor work
+- infra: hosting, cloud services, domains, CDN, CI/CD, SaaS tools, servers, developer tools
+- communication: video conferencing, newsletters, email tools, moderation, community communication, meetup coordination
+- governance: legal, accounting, administration, committees, project management, operational coordination
+- travel: flights, trains, hotels, visa, travel for conferences or events
+- supplies: hardware, devices, office equipment, materials
+- marketing: advertising, promotion, outreach campaigns, promotional content
+- food: meals, catering, beverages
+- other: unclear, corrupted, project-specific, or not enough information to assign confidently
+
+Important rules:
+1. Always output exactly one category.
+2. If the expense clearly refers to paying developers or technical work, use `development`.
+3. If it refers to cloud, hosting, domain, CI, or SaaS tools, use `infra`.
+4. If it refers to Zoom, Mailchimp, newsletters, moderation, or community communication, use `communication`.
+5. Use `other` only if none of the above categories can be assigned confidently.
+6. Do not omit any input, even if corrupted or unclear.
+
+
+Output format:
+"expense_description", category
+
+Now classify the following rows.
 
 Second input:
 ```
