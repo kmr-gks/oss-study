@@ -448,7 +448,7 @@ Important rules:
 
 
 Output format:
-"expense_description", category
+"expense_description",category
 
 Now classify the following rows.
 
