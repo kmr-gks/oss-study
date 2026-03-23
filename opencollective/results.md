@@ -416,3 +416,34 @@ collective_transactionsのレコードのうち、kind = 'EXPENSE'のものを�
 | VENDOR                       | ECOMMERCE        | 159               | -44086.03    |
 | VENDOR                       | CLOUD_OR_SAAS    | 1959              | -181326.89   |
 | VENDOR                       | VENDOR_OTHER     | 4448              | -4360332.87  |
+
+LLMを用いた支出の分類
+
+SELECT * FROM public.collective_transactions
+where kind = 'EXPENSE';
+このSQLクエリで得られるデータを元に、支出のデータをLLMを用いて分類した。
+
+ログイン不要のChatGPTを使用
+First input:
+Determine how open-source organizations are using the funds they receive.
+I will now provide you with a list of strings recorded in the `expense_description` field of OpenCollective’s funding history. Output a CSV file indicating which of the following categories each expense falls under:
+development
+infra
+communication
+governance
+travel
+supplies
+marketing
+food
+other
+
+Second input:
+```
+ Babel development and support (April)
+Claro & Gin contribution day 2023
+Kick off meeting - Flights
+DOET Build team food
+Contributions to Nim (Jan 16 - Feb 16)
+Payment to @rockboom for Simplified Chinese README Translation
+...
+```
