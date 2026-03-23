@@ -425,8 +425,8 @@ where kind = 'EXPENSE';
 
 ログイン不要のChatGPTを使用
 First input:
-Determine how open-source organizations are using the funds they receive.
-I will now provide you with a list of strings recorded in the `expense_description` field of OpenCollective’s funding history. Output a CSV file indicating which of the following categories each expense falls under:
+Determine how an open-source organization is using the funds it has received.
+I will now provide you with strings recorded in the `expense_description` field of OpenCollective’s funding history. Output a CSV file indicating which of the following broad categories each expense falls under. However, even if the description is corrupted or cannot be classified, please provide your answer without deleting the data.
 development
 infra
 communication
