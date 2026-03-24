@@ -417,7 +417,35 @@ collective_transactionsのレコードのうち、kind = 'EXPENSE'のものを�
 | VENDOR                       | CLOUD_OR_SAAS    | 1959              | -181326.89   |
 | VENDOR                       | VENDOR_OTHER     | 4448              | -4360332.87  |
 
-LLMを用いた支出の分類
+
+
+#### 教師あり学習を用いて支出を分類
+支出を分類するため、以下の大カテゴリを定義する。
+* development
+* infra
+* communication
+* governance
+* travel
+* supplies
+* marketing
+* food
+* other
+expense_tagsが設定されているデータを対象にして教師データを作成した。
+支出の全データ: 43393件
+expense_tagsが設定されているデータ: 2338件
+支出内容を推定しやすいexpense_tagsが設定されているデータ: 7003件
+上記の7003件のデータを教師データとして、機械学習モデルを用いて支出の内容を推定した。
+以下のカラムを特徴量として使用した。
+* from_account_type
+* to_account_name
+* to_account_type
+* expense_type
+* description
+* expense_description
+
+
+
+#### LLMを用いた支出の分類
 
 SELECT * FROM public.collective_transactions
 where kind = 'EXPENSE';
@@ -425,6 +453,8 @@ where kind = 'EXPENSE';
 
 ログイン不要のChatGPTを使用
 First input:
+
+```
 You are classifying OpenCollective expense descriptions into one of the following categories.
 
 Categories:
@@ -451,8 +481,10 @@ Output format:
 "expense_description",category
 
 Now classify the following rows.
+```
 
 Second input:
+
 ```
  Babel development and support (April)
 Claro & Gin contribution day 2023
