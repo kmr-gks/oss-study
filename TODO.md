@@ -103,7 +103,6 @@ expense_tagsのランキングのうち、同じものをマージする。
 
 Rq1,rq2に取り組む
 
-
 2026年3月13日
 
 SELECT * FROM public.collective_transactions
@@ -119,3 +118,14 @@ expense_tagsを元に、機械学習を利用して資金使用データを大�
 来週までにもう一度手動で分類し直す
 分類するときは深く考えすぎず、単に何にお金を使ったのかを判別する
 分類方法を論文に書く
+
+
+2026年4月9日
+
+Bountyはプロジェクトのメンバーではないので、別のカテゴリ
+communityではなくmarketing,promotion activity
+Conference はtravel
+
+Google gsodやドキュメント作成はnon-tech service
+クラウドじゃない場合はサブスク infra-subscribe
+開発と関係ない機会はfood&supplis
