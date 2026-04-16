@@ -2,9 +2,14 @@ import pandas as pd
 import json
 from openai import OpenAI
 from sklearn.metrics import accuracy_score, f1_score, classification_report
+import os
 
 # ===== 設定 =====
 MODEL = "gpt-5.4-mini-2026-03-17"
+OUTPUT_PATH = "predictions.csv"
+if os.path.exists(OUTPUT_PATH):
+	print(f"{OUTPUT_PATH} already exists.")
+	exit(1)
 
 client = OpenAI()
 
@@ -34,7 +39,6 @@ Categories:
 
 Rules:
 - Choose exactly ONE category
-- If unclear between development and bounty → choose bounty
 - If no clear purpose → choose unknown
 
 Output format:
@@ -66,22 +70,38 @@ def parse_label(output):
 
 
 # ===== 推論 =====
-predictions = []
-print("index,description,predicted_label")  # CSV形式で出力
+results = []
+
 for i, row in df.iterrows():
     desc = row["expense_description"]
 
     output = classify(desc)
     label = parse_label(output)
 
-    predictions.append(label)
+    results.append({
+        "index": i,
+        "expense_description": desc,
+        "true_label": row["major_category_decided"],
+        "predicted_label": label
+    })
 
-    print(f"{i},{desc},{label}")  # 進捗確認
+    print(f"{i}: {label}")  # 進捗確認
+
+    # --- 途中保存（10件ごと） ---
+    if i % 10 == 0:
+        pd.DataFrame(results).to_csv(OUTPUT_PATH, index=False)
+
+
+# ===== 最終保存 =====
+results_df = pd.DataFrame(results)
+results_df.to_csv(OUTPUT_PATH, index=False)
+
+print(f"\nSaved to {OUTPUT_PATH}")
 
 
 # ===== 評価 =====
-y_true = df["major_category_decided"].tolist()
-y_pred = predictions
+y_true = results_df["true_label"].tolist()
+y_pred = results_df["predicted_label"].tolist()
 
 print("\n=== Evaluation ===")
 print("Accuracy:", accuracy_score(y_true, y_pred))
