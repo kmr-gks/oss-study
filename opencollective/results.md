@@ -447,50 +447,60 @@ expense_tagsが設定されているデータ: 2338件
 
 #### LLMを用いた支出の分類
 
-SELECT * FROM public.collective_transactions
-where kind = 'EXPENSE';
-このSQLクエリで得られるデータを元に、支出のデータをLLMを用いて分類した。
-
-ログイン不要のChatGPTを使用
-First input:
-
+LLM(gpt-5.4-mini-2026-03-17)を用いて、支出の内容を推定した。
+プロンプト:
 ```
-You are classifying OpenCollective expense descriptions into one of the following categories.
+You are a classifier for OSS project expenses.
+
+Select the SINGLE most appropriate category from the list below.
 
 Categories:
-- development: payments for software development, engineering, maintenance, bug fixes, bounties, coding, technical leadership, developer stipends, contractor work
-- infra: hosting, cloud services, domains, CDN, CI/CD, SaaS tools, servers, developer tools
-- communication: video conferencing, newsletters, email tools, moderation, community communication, meetup coordination
-- governance: legal, accounting, administration, committees, project management, operational coordination
-- travel: flights, trains, hotels, visa, travel for conferences or events
-- supplies: hardware, devices, office equipment, materials
-- marketing: advertising, promotion, outreach campaigns, promotional content
-- food: meals, catering, beverages
-- other: unclear, corrupted, project-specific, or not enough information to assign confidently
+- development: Compensation paid to official project members for software development and maintenance.
+- bounty: Payments to external contributors for specific tasks (bug fixes, features).
+- marketing-promotion: Advertising, sponsorships, outreach.
+- travel: Transportation, accommodation, conference costs.
+- non-tech-service: Documentation, writing, translation.
+- infra-subscription: Cloud, hosting, SaaS.
+- equipment: Hardware such as laptops or servers.
+- food-supplies: Meals, consumables, general supplies.
+- legal-admin: Legal, tax, administrative costs.
+- miscellaneous: Known purpose but does not fit above.
+- unknown: Purpose cannot be determined.
 
-Important rules:
-1. Always output exactly one category.
-2. If the expense clearly refers to paying developers or technical work, use `development`.
-3. If it refers to cloud, hosting, domain, CI, or SaaS tools, use `infra`.
-4. If it refers to Zoom, Mailchimp, newsletters, moderation, or community communication, use `communication`.
-5. Use `other` only if none of the above categories can be assigned confidently.
-6. Do not omit any input, even if corrupted or unclear.
-
+Rules:
+- Choose exactly ONE category
+- If no clear purpose → choose unknown
 
 Output format:
-"expense_description",category
+{{"label": "..."}}
 
-Now classify the following rows.
+description: "{description}"
+→
 ```
 
-Second input:
+上記の{description}の部分にcollective_transactionsのexpense_descriptionカラムの値を入れて、LLMに支出の内容を推定させた。
+ランダムに選んだ381件のデータについて、LLMが推定したラベルと我々が手動で付与した正解ラベルを比較して、LLMの推定精度を評価した。
 
-```
- Babel development and support (April)
-Claro & Gin contribution day 2023
-Kick off meeting - Flights
-DOET Build team food
-Contributions to Nim (Jan 16 - Feb 16)
-Payment to @rockboom for Simplified Chinese README Translation
-...
-```
+
+=== Evaluation ===
+Accuracy: 0.7007874015748031
+Macro F1: 0.6277503855064701
+
+=== Classification Report ===
+                     precision    recall  f1-score   support
+
+             bounty       0.92      0.75      0.83        16
+        development       0.91      0.83      0.87        96
+          equipment       0.73      1.00      0.84         8
+      food-supplies       0.94      0.61      0.74        28
+ infra-subscription       0.91      0.85      0.88        80
+        legal-admin       0.22      0.67      0.33         3
+marketing-promotion       0.70      0.61      0.65        38
+      miscellaneous       0.30      0.27      0.29        22
+   non-tech-service       0.27      0.10      0.15        29
+             travel       0.80      0.84      0.82        19
+            unknown       0.39      0.76      0.51        42
+
+           accuracy                           0.70       381
+          macro avg       0.64      0.66      0.63       381
+       weighted avg       0.73      0.70      0.70       381
