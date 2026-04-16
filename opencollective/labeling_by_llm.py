@@ -20,22 +20,22 @@ You are a classifier for OSS project expenses.
 Select the SINGLE most appropriate category from the list below.
 
 Categories:
-- Development: Compensation paid to official project members for software development and maintenance.
-- Bounty: Payments to external contributors for specific tasks (bug fixes, features).
-- Marketing & Promotion: Advertising, sponsorships, outreach.
-- Travel: Transportation, accommodation, conference costs.
-- Non-tech Service: Documentation, writing, translation.
-- Infra-subscription: Cloud, hosting, SaaS.
-- Equipment: Hardware such as laptops or servers.
-- Food & Supplies: Meals, consumables, general supplies.
-- Legal & Admin: Legal, tax, administrative costs.
-- Miscellaneous: Known purpose but does not fit above.
-- Unknown: Purpose cannot be determined.
+- development: Compensation paid to official project members for software development and maintenance.
+- bounty: Payments to external contributors for specific tasks (bug fixes, features).
+- marketing-promotion: Advertising, sponsorships, outreach.
+- travel: Transportation, accommodation, conference costs.
+- non-tech-service: Documentation, writing, translation.
+- infra-subscription: Cloud, hosting, SaaS.
+- equipment: Hardware such as laptops or servers.
+- food-supplies: Meals, consumables, general supplies.
+- legal-admin: Legal, tax, administrative costs.
+- miscellaneous: Known purpose but does not fit above.
+- unknown: Purpose cannot be determined.
 
 Rules:
 - Choose exactly ONE category
-- If unclear between Development and Bounty → choose Bounty
-- If no clear purpose → choose Unknown
+- If unclear between development and bounty → choose bounty
+- If no clear purpose → choose unknown
 
 Output format:
 {{"label": "..."}}
@@ -62,7 +62,7 @@ def parse_label(output):
     try:
         return json.loads(output)["label"]
     except:
-        return "Unknown"
+        return "unknown"
 
 
 # ===== 推論 =====
