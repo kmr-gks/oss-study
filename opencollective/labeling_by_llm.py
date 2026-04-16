@@ -67,7 +67,7 @@ def parse_label(output):
 
 # ===== 推論 =====
 predictions = []
-
+print("index,description,predicted_label")  # CSV形式で出力
 for i, row in df.iterrows():
     desc = row["expense_description"]
 
@@ -76,7 +76,7 @@ for i, row in df.iterrows():
 
     predictions.append(label)
 
-    print(f"{i}: {label}")  # 進捗確認
+    print(f"{i},{desc},{label}")  # 進捗確認
 
 
 # ===== 評価 =====
