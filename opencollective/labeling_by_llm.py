@@ -25,17 +25,17 @@ You are a classifier for OSS project expenses.
 Select the SINGLE most appropriate category from the list below.
 
 Categories:
-- development: Compensation paid to official project members for software development and maintenance.
-- bounty: Payments to external contributors for specific tasks (bug fixes, features).
-- marketing-promotion: Advertising, sponsorships, outreach.
-- travel: Transportation, accommodation, conference costs.
-- non-tech-service: Documentation, writing, translation.
-- infra-subscription: Cloud, hosting, SaaS.
-- equipment: Hardware such as laptops or servers.
-- food-supplies: Meals, consumables, general supplies.
-- legal-admin: Legal, tax, administrative costs.
-- miscellaneous: Known purpose but does not fit above.
-- unknown: Purpose cannot be determined.
+- development: Compensation paid to official project members for direct software development and maintenance.
+- bounty: Rewards or fees paid to external contributors (non-members) for specific tasks, bug fixes, or feature implementations.
+- marketing-promotion: Expenses for project outreach and visibility, such as advertising and sponsorships.
+- travel: All costs associated with transportation, lodging, and conference attendance (including registration fees).
+- non-tech-service: Payments for essential activities that are not directly related to coding, such as documentation, and technical writing.
+- infra-subscription: Recurring costs for cloud hosting, internet connectivity, and other software-as-a-service (SaaS) subscriptions.
+- equipment: Purchase of physical hardware and assets directly used for development activities, such as laptops and servers.
+- food-supplies: Purchase of consumables, meals, and general physical items that are not directly related to development.
+- legal-admin: Expenditures for project governance, such as incorporation fees, trademark filings, tax preparation, and legal consultations.
+- miscellaneous: Expenditures where the purpose is identified but does not fit into any of the specific categories above (e.g., bank fees).
+- unknown: Expenditures where the purpose cannot be determined at all due to missing or insufficient information.
 
 Rules:
 - Choose exactly ONE category

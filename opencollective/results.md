@@ -481,26 +481,25 @@ description: "{description}"
 上記の{description}の部分にcollective_transactionsのexpense_descriptionカラムの値を入れて、LLMに支出の内容を推定させた。
 ランダムに選んだ381件のデータについて、LLMが推定したラベルと我々が手動で付与した正解ラベルを比較して、LLMの推定精度を評価した。
 
-
 === Evaluation ===
-Accuracy: 0.7007874015748031
-Macro F1: 0.6277503855064701
+Accuracy: 0.7165354330708661
+Macro F1: 0.6545982404169286
 
 === Classification Report ===
                      precision    recall  f1-score   support
 
-             bounty       0.92      0.75      0.83        16
-        development       0.91      0.83      0.87        96
+             bounty       0.81      0.81      0.81        16
+        development       0.91      0.85      0.88        96
           equipment       0.73      1.00      0.84         8
-      food-supplies       0.94      0.61      0.74        28
- infra-subscription       0.91      0.85      0.88        80
-        legal-admin       0.22      0.67      0.33         3
-marketing-promotion       0.70      0.61      0.65        38
-      miscellaneous       0.30      0.27      0.29        22
-   non-tech-service       0.27      0.10      0.15        29
-             travel       0.80      0.84      0.82        19
-            unknown       0.39      0.76      0.51        42
+      food-supplies       0.82      0.82      0.82        28
+ infra-subscription       0.90      0.91      0.91        80
+        legal-admin       0.40      0.67      0.50         3
+marketing-promotion       0.59      0.61      0.60        38
+      miscellaneous       0.26      0.36      0.30        22
+   non-tech-service       0.22      0.21      0.21        29
+             travel       0.77      0.89      0.83        19
+            unknown       0.58      0.43      0.49        42
 
-           accuracy                           0.70       381
-          macro avg       0.64      0.66      0.63       381
-       weighted avg       0.73      0.70      0.70       381
+           accuracy                           0.72       381
+          macro avg       0.64      0.69      0.65       381
+       weighted avg       0.72      0.72      0.72       381
