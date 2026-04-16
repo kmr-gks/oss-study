@@ -67,6 +67,8 @@ python .\expense-labeling-results.py
 #labeling by using LLM
 psql -U postgres -d opencollective -f .\select_rows_randomly.sql > expenses_random_order.csv
 
+export OPENAI_API_KEY="your-api-key"
+python labeling_by_llm.py
 ```
 
 ## ファイル構成
