@@ -14,8 +14,10 @@ if os.path.exists(OUTPUT_PATH):
 client = OpenAI()
 
 # ===== CSV読み込み =====
-df = pd.read_csv("expenses_random_order_v1.csv")
-df = df[["expense_description", "major_category_decided"]].dropna()
+#df = pd.read_csv("expenses_random_order_v1.csv")
+#df = df[["expense_description", "major_category_decided"]].dropna()
+df = pd.read_csv("expenses_random_order_v2.csv")
+df = df[["expense_description", "manual_label_v2"]].dropna()
 
 # ===== プロンプト =====
 def build_prompt(description):
@@ -78,7 +80,7 @@ for i, row in df.iterrows():
     results.append({
         "index": i,
         "expense_description": desc,
-        "true_label": row["major_category_decided"],
+        "true_label": row["manual_label_v2"],
         "predicted_label": label
     })
 
