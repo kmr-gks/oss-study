@@ -1,0 +1,163 @@
+import pandas as pd
+import json
+from openai import OpenAI
+from sklearn.metrics import accuracy_score, f1_score, classification_report
+import os
+import api
+import psycopg2
+
+# DB接続
+conn = psycopg2.connect(
+    dbname="opencollective",
+    user="postgres",
+    password=api.load_sql_password_from_credentials(),
+    host="localhost",
+    port="5432"
+)
+
+cur = conn.cursor()
+
+
+cur.execute(
+    """
+ALTER TABLE collective_transactions
+ADD COLUMN IF NOT EXISTS expense_label_LLM TEXT;
+	"""
+)
+
+# SQL実行
+query = """
+SELECT id, expense_description
+FROM public.collective_transactions
+WHERE kind = 'EXPENSE'
+ORDER BY id ASC
+limit 10;
+"""
+
+cur.execute(query)
+
+# 取得して表示
+rows = cur.fetchall()
+
+for row in rows:
+    print(row[0],row[1])
+    #SQLのexpense_label_LLMを更新するコード例
+    update_query = """
+    UPDATE public.collective_transactions
+    SET expense_label_LLM = %s
+    WHERE id = %s;
+    """
+    cur.execute(update_query, ("test_label", row[0]))
+    conn.commit()
+
+# 後処理
+cur.close()
+conn.close()
+
+exit(0)
+
+# ===== 設定 =====
+MODEL = "gpt-5.4-mini-2026-03-17"
+OUTPUT_PATH = "predictions.csv"
+if os.path.exists(OUTPUT_PATH):
+	print(f"{OUTPUT_PATH} already exists.")
+	exit(1)
+
+client = OpenAI()
+
+# ===== CSV読み込み =====
+df = pd.read_csv("expenses_random_order_v1.csv")
+df = df[["expense_description", "major_category_decided"]].dropna()
+
+# ===== プロンプト =====
+def build_prompt(description):
+    return f"""
+You are a classifier for OSS project expenses.
+
+Select the SINGLE most appropriate category from the list below.
+
+Categories:
+- development: Compensation paid to official project members for direct software development and maintenance.
+- bounty: Rewards or fees paid to external contributors (non-members) for specific tasks, bug fixes, or feature implementations.
+- marketing-promotion: Expenses for project outreach and visibility, such as advertising and sponsorships.
+- travel: All costs associated with transportation, lodging, and conference attendance (including registration fees).
+- non-tech-service: Payments for essential activities that are not directly related to coding, such as documentation, and technical writing.
+- infra-subscription: Recurring costs for cloud hosting, internet connectivity, and other software-as-a-service (SaaS) subscriptions.
+- equipment: Purchase of physical hardware and assets directly used for development activities, such as laptops and servers.
+- food-supplies: Purchase of consumables, meals, and general physical items that are not directly related to development.
+- legal-admin: Expenditures for project governance, such as incorporation fees, trademark filings, tax preparation, and legal consultations.
+- miscellaneous: Expenditures where the purpose is identified but does not fit into any of the specific categories above (e.g., bank fees).
+- unknown: Expenditures where the purpose cannot be determined at all due to missing or insufficient information.
+
+Rules:
+- Choose exactly ONE category
+- If no clear purpose → choose unknown
+
+Output format:
+{{"label": "..."}}
+
+description: "{description}"
+→
+"""
+
+# ===== API呼び出し =====
+def classify(description):
+    prompt = build_prompt(description)
+
+    response = client.chat.completions.create(
+        model=MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0
+    )
+
+    return response.choices[0].message.content
+
+
+# ===== 出力パース =====
+def parse_label(output):
+    try:
+        return json.loads(output)["label"]
+    except:
+        return "unknown"
+
+
+# ===== 推論 =====
+results = []
+
+for i, row in df.iterrows():
+    desc = row["expense_description"]
+
+    output = classify(desc)
+    label = parse_label(output)
+
+    results.append({
+        "index": i,
+        "expense_description": desc,
+        "true_label": row["major_category_decided"],
+        "predicted_label": label
+    })
+
+    print(f"{i}: {label}")  # 進捗確認
+
+    # --- 途中保存（10件ごと） ---
+    if i % 10 == 0:
+        pd.DataFrame(results).to_csv(OUTPUT_PATH, index=False)
+
+
+# ===== 最終保存 =====
+results_df = pd.DataFrame(results)
+results_df.to_csv(OUTPUT_PATH, index=False)
+
+print(f"\nSaved to {OUTPUT_PATH}")
+
+
+# ===== 評価 =====
+y_true = results_df["true_label"].tolist()
+y_pred = results_df["predicted_label"].tolist()
+
+print("\n=== Evaluation ===")
+print("Accuracy:", accuracy_score(y_true, y_pred))
+print("Macro F1:", f1_score(y_true, y_pred, average="macro"))
+
+print("\n=== Classification Report ===")
+print(classification_report(y_true, y_pred))
