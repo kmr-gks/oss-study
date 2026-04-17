@@ -6,7 +6,8 @@ import os
 
 # ===== 設定 =====
 MODEL = "gpt-5.4-mini-2026-03-17"
-OUTPUT_PATH = "predictions.csv"
+#ファイル名の末尾に日付時刻を付与
+OUTPUT_PATH = f"predictions_{pd.Timestamp.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
 if os.path.exists(OUTPUT_PATH):
 	print(f"{OUTPUT_PATH} already exists.")
 	exit(1)
@@ -28,12 +29,16 @@ Select the SINGLE most appropriate category from the list below.
 
 Categories:
 - development: Compensation paid to official project members for direct software development and maintenance.
-- bounty: Rewards or fees paid to external contributors (non-members) for specific tasks, bug fixes, or feature implementations.
+- bounty: Rewards or fees paid to external contributors (non-members) for specific tasks, bug fixes, feature implementations, or general contributions.
 - infra-subscription: Recurring costs for cloud hosting, internet connectivity, and other software-as-a-service (SaaS) subscriptions.
 - equipment: Purchase of physical hardware and assets directly used for development activities, such as laptops and servers.
 - food-supplies: Purchase of consumables, meals, and general physical items that are not directly related to development.
-- marketing-events: Costs for organizing or participating in events to promote the project and recruit new developers (includes marketing, promotion, transportation, registration fees).
-- non-tech-activities: Essential tasks not directly linked to coding, such as documentation, translation, legal or tax compliance, and other miscellaneous fees.
+- marketing-events: Costs for organizing or participating in events to promote the project and recruit new developers (includes marketing, social media promotion, transportation, conference registration fees).
+- non-tech-activities: Essential project-related tasks that are not directly linked to coding, such as documentation, translation, technical writing, legal or tax compliance, accounting, and general administrative work.
+IMPORTANT:
+If the expense is related to creating or improving project documentation, treat it as "non-tech-activities", even if it involves participation in a program or event.
+For example, participation in programs such as Google Season of Docs (GSoD) should be classified as "non-tech-activities" when the purpose is documentation work for the project.
+
 - unknown: Expenditures where the purpose cannot be determined at all due to missing or insufficient information.
 
 Rules:
