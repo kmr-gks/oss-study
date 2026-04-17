@@ -6,55 +6,6 @@ import os
 import api
 import psycopg2
 
-# DB接続
-conn = psycopg2.connect(
-    dbname="opencollective",
-    user="postgres",
-    password=api.load_sql_password_from_credentials(),
-    host="localhost",
-    port="5432"
-)
-
-cur = conn.cursor()
-
-
-cur.execute(
-    """
-ALTER TABLE collective_transactions
-ADD COLUMN IF NOT EXISTS expense_label_LLM TEXT;
-	"""
-)
-
-# SQL実行
-query = """
-SELECT id, expense_description
-FROM public.collective_transactions
-WHERE kind = 'EXPENSE'
-ORDER BY id ASC
-limit 10;
-"""
-
-cur.execute(query)
-
-# 取得して表示
-rows = cur.fetchall()
-
-for row in rows:
-    print(row[0],row[1])
-    #SQLのexpense_label_LLMを更新するコード例
-    update_query = """
-    UPDATE public.collective_transactions
-    SET expense_label_LLM = %s
-    WHERE id = %s;
-    """
-    cur.execute(update_query, ("test_label", row[0]))
-    conn.commit()
-
-# 後処理
-cur.close()
-conn.close()
-
-exit(0)
 
 # ===== 設定 =====
 MODEL = "gpt-5.4-mini-2026-03-17"
@@ -62,12 +13,8 @@ OUTPUT_PATH = "predictions.csv"
 if os.path.exists(OUTPUT_PATH):
 	print(f"{OUTPUT_PATH} already exists.")
 	exit(1)
-
+    
 client = OpenAI()
-
-# ===== CSV読み込み =====
-df = pd.read_csv("expenses_random_order_v1.csv")
-df = df[["expense_description", "major_category_decided"]].dropna()
 
 # ===== プロンプト =====
 def build_prompt(description):
@@ -120,44 +67,52 @@ def parse_label(output):
     except:
         return "unknown"
 
+# DB接続
+conn = psycopg2.connect(
+    dbname="opencollective",
+    user="postgres",
+    password=api.load_sql_password_from_credentials(),
+    host="localhost",
+    port="5432"
+)
 
-# ===== 推論 =====
-results = []
+cur = conn.cursor()
 
-for i, row in df.iterrows():
-    desc = row["expense_description"]
+cur.execute(
+    """
+ALTER TABLE collective_transactions
+ADD COLUMN IF NOT EXISTS expense_label_LLM TEXT;
+	"""
+)
 
-    output = classify(desc)
+# SQL実行
+query = """
+SELECT id, expense_description
+FROM public.collective_transactions
+WHERE kind = 'EXPENSE'
+ORDER BY id ASC;
+"""
+
+cur.execute(query)
+
+# 取得して表示
+rows = cur.fetchall()
+
+for row in rows:
+    print(row[0],row[1])
+    output = classify(row[1])
     label = parse_label(output)
+    #SQLのexpense_label_LLMを更新するコード例
+    update_query = """
+    UPDATE public.collective_transactions
+    SET expense_label_LLM = %s
+    WHERE id = %s;
+    """
+    cur.execute(update_query, (label, row[0]))
+    conn.commit()
 
-    results.append({
-        "index": i,
-        "expense_description": desc,
-        "true_label": row["major_category_decided"],
-        "predicted_label": label
-    })
+# 後処理
+cur.close()
+conn.close()
 
-    print(f"{i}: {label}")  # 進捗確認
-
-    # --- 途中保存（10件ごと） ---
-    if i % 10 == 0:
-        pd.DataFrame(results).to_csv(OUTPUT_PATH, index=False)
-
-
-# ===== 最終保存 =====
-results_df = pd.DataFrame(results)
-results_df.to_csv(OUTPUT_PATH, index=False)
-
-print(f"\nSaved to {OUTPUT_PATH}")
-
-
-# ===== 評価 =====
-y_true = results_df["true_label"].tolist()
-y_pred = results_df["predicted_label"].tolist()
-
-print("\n=== Evaluation ===")
-print("Accuracy:", accuracy_score(y_true, y_pred))
-print("Macro F1:", f1_score(y_true, y_pred, average="macro"))
-
-print("\n=== Classification Report ===")
-print(classification_report(y_true, y_pred))
+exit(0)

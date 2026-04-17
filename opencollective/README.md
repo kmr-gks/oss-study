@@ -69,6 +69,7 @@ psql -U postgres -d opencollective -f .\select_rows_randomly.sql > expenses_rand
 
 export OPENAI_API_KEY="your-api-key"
 python labeling_by_llm.py
+python labeling_all_expense_by_llm.py
 ```
 
 ## ファイル構成
