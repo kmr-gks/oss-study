@@ -27,14 +27,11 @@ Select the SINGLE most appropriate category from the list below.
 Categories:
 - development: Compensation paid to official project members for direct software development and maintenance.
 - bounty: Rewards or fees paid to external contributors (non-members) for specific tasks, bug fixes, or feature implementations.
-- marketing-promotion: Expenses for project outreach and visibility, such as advertising and sponsorships.
-- travel: All costs associated with transportation, lodging, and conference attendance (including registration fees).
-- non-tech-service: Payments for essential activities that are not directly related to coding, such as documentation, and technical writing.
 - infra-subscription: Recurring costs for cloud hosting, internet connectivity, and other software-as-a-service (SaaS) subscriptions.
 - equipment: Purchase of physical hardware and assets directly used for development activities, such as laptops and servers.
 - food-supplies: Purchase of consumables, meals, and general physical items that are not directly related to development.
-- legal-admin: Expenditures for project governance, such as incorporation fees, trademark filings, tax preparation, and legal consultations.
-- miscellaneous: Expenditures where the purpose is identified but does not fit into any of the specific categories above (e.g., bank fees).
+- marketing-events: Costs for organizing or participating in events to promote the project and recruit new developers (includes marketing, promotion, transportation, registration fees).
+- non-tech-activities: Essential tasks not directly linked to coding, such as documentation, translation, legal or tax compliance, and other miscellaneous fees.
 - unknown: Expenditures where the purpose cannot be determined at all due to missing or insufficient information.
 
 Rules:
