@@ -98,8 +98,8 @@ cur.execute(query)
 # 取得して表示
 rows = cur.fetchall()
 
-for row in rows:
-    print(row[0],row[1])
+for i, row in enumerate(rows):
+    print(f"{i+1}/{len(rows)}: {row[0]}, {row[1]}")
     output = classify(row[1])
     label = parse_label(output)
     #SQLのexpense_label_LLMを更新するコード例
@@ -109,7 +109,10 @@ for row in rows:
     WHERE id = %s;
     """
     cur.execute(update_query, (label, row[0]))
-    conn.commit()
+    if (i + 1) % 100 == 0:
+        conn.commit()
+
+conn.commit()
 
 # 後処理
 cur.close()
