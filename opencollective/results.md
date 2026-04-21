@@ -448,8 +448,13 @@ expense_tagsが設定されているデータ: 2338件
 #### LLMを用いた支出の分類
 
 LLM(gpt-5.4-mini-2026-03-17)を用いて、支出の内容を推定した。
-プロンプト:
-```
+プロンプトとコード:
+```py
+MODEL = "gpt-5.4-mini-2026-03-17"
+
+# ===== プロンプト =====
+def build_prompt(description):
+    return f"""
 You are a classifier for OSS project expenses.
 
 Select the SINGLE most appropriate category from the list below.
@@ -476,6 +481,19 @@ Output format:
 
 description: "{description}"
 →
+"""
+
+# ===== API呼び出し =====
+def classify(description):
+    prompt = build_prompt(description)
+
+    response = client.chat.completions.create(
+        model=MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0
+    )
+
+    return response.choices[0].message.content
 ```
 
 上記の{description}の部分にcollective_transactionsのexpense_descriptionカラムの値を入れて、LLMに支出の内容を推定させた。
