@@ -34,7 +34,7 @@ Select the SINGLE most appropriate category from the list below.
 
 Categories:
 - development: Compensation paid to official project members for direct software development and maintenance.
-- bounty: Rewards or fees paid to external contributors (non-members) for specific tasks, bug fixes, feature implementations, or general contributions.
+- bounty: Rewards or fees paid to external contributors (non-members) for specific tasks, bug fixes, feature implementations, or other contributions.
 - infra-subscription: Recurring costs for cloud hosting, internet connectivity, and other software-as-a-service (SaaS) subscriptions.
 - equipment: Purchase of physical hardware and assets directly used for development activities, such as laptops and servers.
 - food-supplies: Purchase of consumables, meals, and general physical items that are not directly related to development.
@@ -44,6 +44,16 @@ IMPORTANT:
 If the expense is related to creating or improving project documentation, treat it as "non-tech-activities", even if it involves participation in a program or event.
 For example, participation in programs such as Google Season of Docs (GSoD) should be classified as "non-tech-activities" when the purpose is documentation work for the project.
 - unknown: Expenditures where the purpose cannot be determined due to insufficient information.
+
+Descriptions may appear vague or incomplete. However, in many cases, they refer to development-related activities.
+If the purpose is not explicitly stated, infer the most likely purpose by reasonably completing the context (e.g., missing subject or implicit meaning).
+When making such inferences:
+- Use common patterns in OSS projects (e.g., contributions, maintenance, works, docs).
+- Prefer the most plausible category based on context.
+
+However:
+- Do NOT guess randomly.
+- If there is truly no reasonable interpretation → choose "unknown".
 
 Rules:
 - Choose exactly ONE category
