@@ -5,7 +5,7 @@ from sklearn.metrics import accuracy_score, f1_score, classification_report
 import os
 
 # ===== 設定 =====
-MODEL = "gpt-4o-search-preview-2025-03-11"
+MODEL = "gpt-5.4-mini-2026-03-17"
 #ファイル名の末尾に日付時刻を付与
 OUTPUT_PATH = f"predictions_{pd.Timestamp.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
 if os.path.exists(OUTPUT_PATH):
@@ -43,7 +43,7 @@ For example, participation in programs such as Google Season of Docs (GSoD) shou
 
 Rules:
 - Choose exactly ONE category
-- If you're unsure, feel free to use a web search. If you still can't find the answer after searching, choose unknown.
+- If no clear purpose → choose unknown
 
 Output format:
 {{"label": "..."}}
@@ -58,20 +58,9 @@ def classify(description):
 
     response = client.chat.completions.create(
         model=MODEL,
-                    web_search_options={
-                "user_location": {
-                    "type": "approximate",
-                    "approximate": {
-                        "country": "JP",
-                        "city": "Tokyo",
-                        "region": "Tokyo",
-                    },
-                },
-            },
         messages=[{"role": "user", "content": prompt}],
-        #temperature=0
+        temperature=0
     )
-
     return response.choices[0].message.content
 
 
