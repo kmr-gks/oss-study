@@ -38,15 +38,24 @@ Categories:
 IMPORTANT:
 If the expense is related to creating or improving project documentation, treat it as "non-tech-activities", even if it involves participation in a program or event.
 For example, participation in programs such as Google Season of Docs (GSoD) should be classified as "non-tech-activities" when the purpose is documentation work for the project.
-
-- unknown: Expenditures where the purpose cannot be determined at all due to missing or insufficient information.
+- unknown: Expenditures where the purpose cannot be determined due to insufficient information.
 
 Rules:
 - Choose exactly ONE category
 - If no clear purpose → choose unknown
 
+Confidence definition:
+- 0.0 = pure guess (almost no evidence)
+- 0.5 = ambiguous (multiple categories plausible)
+- 1.0 = almost certain (clear and explicit evidence)
+
+Guidelines for confidence:
+- High (0.8–1.0): Explicit keywords strongly match a category (e.g., "AWS", "server", "bug bounty")
+- Medium (0.5–0.8): Some evidence but ambiguity exists
+- Low (0.0–0.5): Vague description or weak signals
+
 Output format:
-{{"label": "..."}}
+{{"label": "...", "confidence": "0.0-1.0"}}
 
 description: "{description}"
 →
@@ -67,7 +76,7 @@ def classify(description):
 # ===== 出力パース =====
 def parse_label(output):
     try:
-        return json.loads(output)["label"]
+        return json.loads(output)["label"],json.loads(output)["confidence"]
     except:
         return "unknown"
 
@@ -79,16 +88,17 @@ for i, row in df.iterrows():
     desc = row["expense_description"]
 
     output = classify(desc)
-    label = parse_label(output)
+    label,confidence = parse_label(output)
 
     results.append({
         "index": i,
         "expense_description": desc,
         "true_label": row["manual_label_v2"],
-        "predicted_label": label
+        "predicted_label": label,
+        "conficence": confidence
     })
 
-    print(f"{i}: {label}")  # 進捗確認
+    print(f"{i},{label},{confidence}")  # 進捗確認
 
     # --- 途中保存（10件ごと） ---
     if i % 10 == 0:
