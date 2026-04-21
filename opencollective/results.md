@@ -481,6 +481,8 @@ description: "{description}"
 上記の{description}の部分にcollective_transactionsのexpense_descriptionカラムの値を入れて、LLMに支出の内容を推定させた。
 ランダムに選んだ381件のデータについて、LLMが推定したラベルと我々が手動で付与した正解ラベルを比較して、LLMの推定精度を評価した。
 
+結果
+```
 === Evaluation ===
 Accuracy: 0.7165354330708661
 Macro F1: 0.6545982404169286
@@ -503,3 +505,89 @@ marketing-promotion       0.59      0.61      0.60        38
            accuracy                           0.72       381
           macro avg       0.64      0.69      0.65       381
        weighted avg       0.72      0.72      0.72       381
+```
+
+
+#### LLMにweb検索を許可し、分類させた結果
+
+プロンプトとコード
+```python
+MODEL = "gpt-4o-search-preview-2025-03-11"
+# ===== プロンプト =====
+def build_prompt(description):
+    return f"""
+You are a classifier for OSS project expenses.
+
+Select the SINGLE most appropriate category from the list below.
+
+Categories:
+- development: Compensation paid to official project members for direct software development and maintenance.
+- bounty: Rewards or fees paid to external contributors (non-members) for specific tasks, bug fixes, feature implementations, or general contributions.
+- infra-subscription: Recurring costs for cloud hosting, internet connectivity, and other software-as-a-service (SaaS) subscriptions.
+- equipment: Purchase of physical hardware and assets directly used for development activities, such as laptops and servers.
+- food-supplies: Purchase of consumables, meals, and general physical items that are not directly related to development.
+- marketing-events: Costs for organizing or participating in events to promote the project and recruit new developers (includes marketing, social media promotion, transportation, conference registration fees).
+- non-tech-activities: Essential project-related tasks that are not directly linked to coding, such as documentation, translation, technical writing, legal or tax compliance, accounting, and general administrative work.
+IMPORTANT:
+If the expense is related to creating or improving project documentation, treat it as "non-tech-activities", even if it involves participation in a program or event.
+For example, participation in programs such as Google Season of Docs (GSoD) should be classified as "non-tech-activities" when the purpose is documentation work for the project.
+
+- unknown: Expenditures where the purpose cannot be determined at all due to missing or insufficient information.
+
+Rules:
+- Choose exactly ONE category
+- If you're unsure, feel free to use a web search. If you still can't find the answer after searching, choose unknown.
+
+Output format:
+{{"label": "..."}}
+
+description: "{description}"
+→
+"""
+
+# ===== API呼び出し =====
+def classify(description):
+    prompt = build_prompt(description)
+
+    response = client.chat.completions.create(
+        model=MODEL,
+                    web_search_options={
+                "user_location": {
+                    "type": "approximate",
+                    "approximate": {
+                        "country": "JP",
+                        "city": "Tokyo",
+                        "region": "Tokyo",
+                    },
+                },
+            },
+        messages=[{"role": "user", "content": prompt}],
+        #temperature=0
+    )
+
+    return response.choices[0].message.content
+```
+結果
+```
+=== Evaluation ===
+Accuracy: 0.6272965879265092
+Macro F1: 0.6500617807345042
+
+=== Classification Report ===
+                     precision    recall  f1-score   support
+
+             bounty       0.65      0.69      0.67        16
+        development       0.95      0.65      0.77        96
+          equipment       0.58      0.88      0.70         8
+      food-supplies       0.91      0.75      0.82        28
+ infra-subscription       0.85      0.66      0.75        80
+   marketing-events       0.82      0.56      0.67        57
+non-tech-activities       0.54      0.35      0.43        54
+            unknown       0.27      0.81      0.40        42
+
+           accuracy                           0.63       381
+          macro avg       0.70      0.67      0.65       381
+       weighted avg       0.76      0.63      0.66       381
+```
+ラベル分類の性能が良くなかった上、1回動かしただけでクレジットを$10消費した。
+
