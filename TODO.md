@@ -119,7 +119,6 @@ expense_tagsを元に、機械学習を利用して資金使用データを大�
 分類するときは深く考えすぎず、単に何にお金を使ったのかを判別する
 分類方法を論文に書く
 
-
 2026年4月9日
 
 Bountyはプロジェクトのメンバーではないので、別のカテゴリ
@@ -129,3 +128,20 @@ Conference はtravel
 Google gsodやドキュメント作成はnon-tech service
 クラウドじゃない場合はサブスク infra-subscribe
 開発と関係ない機会はfood&supplis
+
+2026年4月17日
+
+RQ2
+
+以下のラベルを統合する
+Marketing, travel
+legal, nontec, miscellaneous
+8つになるはず
+
+LLMを使うときにもっとcontextを教える。
+必要に応じてweb検索もするようモデルを変更する。
+ラベル分類結果について、二次元ヒートマップも作成する
+
+RQ3
+
+RQ2でdevelopmentに分類されたものを使用して分析し直す
