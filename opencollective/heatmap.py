@@ -1,14 +1,21 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import numpy as np
 
-#df=pd.read_excel("expenses_random_order_v1.xlsx")
-#true_col, pred_col = "major_category_decided", "predicted_label_by_LLM"
+df_true = pd.read_excel("expenses_random_order_v2.xlsx")
+df_pred = pd.read_csv("predictions_2026-___.csv")
 
-df=pd.read_excel("expenses_random_order_v2.xlsx")
-true_col, pred_col = "manual_label_v2", "predicted_label_by_LLM"
+true_col,pred_col = "manual_label_v2", "predicted_label"
 
+# 長さチェック
+if len(df_true) != len(df_pred):
+    raise ValueError("行数が一致していません")
+
+# データ結合
+df = pd.DataFrame({
+    true_col: df_true[true_col],
+    pred_col: df_pred[pred_col]
+})
 
 print(df[[true_col, pred_col]].head(20))
 
