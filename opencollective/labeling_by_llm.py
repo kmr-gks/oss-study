@@ -25,6 +25,11 @@ def build_prompt(description):
     return f"""
 You are a classifier for OSS project expenses.
 
+Context:
+This classification is used to analyze how funds received by OSS projects are actually used. The goal is to understand the real allocation of funds across different types of activities.
+
+Expense descriptions are often short and may be ambiguous. In many cases, the description is written by the person who received or used the funds, and may reflect their own perspective.
+
 Select the SINGLE most appropriate category from the list below.
 
 Categories:
@@ -95,7 +100,8 @@ for i, row in df.iterrows():
         "expense_description": desc,
         "true_label": row["manual_label_v2"],
         "predicted_label": label,
-        "conficence": confidence
+        "confidence": confidence,
+        "is_correct": label == row["manual_label_v2"]
     })
 
     print(f"{i},{label},{confidence}")  # 進捗確認
