@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 df_true = pd.read_excel("expenses_random_order_v2.xlsx")
-df_pred = pd.read_csv("predictions_2026-___.csv")
+df_pred = pd.read_csv("predictions_.csv")
 
 true_col,pred_col = "manual_label_v2", "predicted_label"
 
@@ -26,7 +26,7 @@ plt.figure()
 sns.heatmap(ct, annot=True, fmt="d", cmap="Reds")
 plt.imshow(ct.values)
 
-plt.xticks(range(len(ct.columns)), ct.columns, rotation=45)
+plt.xticks(range(len(ct.columns)), ct.columns, rotation=45, ha="right")
 plt.yticks(range(len(ct.index)), ct.index)
 
 plt.xlabel("Predicted")
@@ -34,5 +34,5 @@ plt.ylabel("True")
 plt.title("Confusion Matrix")
 
 plt.tight_layout()
-plt.show()
 plt.savefig("heatmap_label1.png")
+plt.show()
