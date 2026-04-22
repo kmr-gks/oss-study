@@ -5,7 +5,7 @@ from sklearn.metrics import accuracy_score, f1_score, classification_report
 import os
 
 # ===== 設定 =====
-MODEL = "gpt-5.4-mini-2026-03-17"
+MODEL = "gpt-5.4"
 #ファイル名の末尾に日付時刻を付与
 OUTPUT_PATH = f"predictions_{pd.Timestamp.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
 if os.path.exists(OUTPUT_PATH):
@@ -33,7 +33,7 @@ Expense descriptions are often short and may be ambiguous. In many cases, the de
 Select the SINGLE most appropriate category from the list below.
 
 Categories:
-- development: Compensation paid to official project members for direct software development and maintenance.
+- development: Compensation paid to official project members for direct software development, PR (Pull Request), and maintenance.
 - bounty: Rewards or fees paid to external contributors (non-members) for specific tasks, bug fixes, feature implementations, or other contributions.
 - infra-subscription: Recurring costs for cloud hosting, internet connectivity, and other software-as-a-service (SaaS) subscriptions.
 - equipment: Purchase of physical hardware and assets directly used for development activities, such as laptops and servers.
@@ -43,7 +43,7 @@ Categories:
 IMPORTANT:
 If the expense is related to creating or improving project documentation, treat it as "non-tech-activities", even if it involves participation in a program or event.
 For example, participation in programs such as Google Season of Docs (GSoD) should be classified as "non-tech-activities" when the purpose is documentation work for the project.
-- unknown: Expenditures where the purpose cannot be determined due to insufficient information.
+- unknown: Use only when the purpose cannot be determined due to insufficient information.
 
 Descriptions may appear vague or incomplete. However, in many cases, they refer to development-related activities.
 If the purpose is not explicitly stated, infer the most likely purpose by reasonably completing the context (e.g., missing subject or implicit meaning).
@@ -93,7 +93,7 @@ def parse_label(output):
     try:
         return json.loads(output)["label"],json.loads(output)["confidence"]
     except:
-        return "unknown"
+        return "unknown", "0.0"
 
 
 # ===== 推論 =====
