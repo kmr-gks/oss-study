@@ -53,6 +53,7 @@ chatgpt案
 また、資金提供前後における開発者の行動差を比較し、資金が新規貢献者の参加促進やメンテナンス作業の持続に与える効果を検証する。これにより、経済的支援がOSSコミュニティの持続可能性に果たす役割を明らかにし、効果的な資金配分や支援設計のあり方に示唆を与えることを目指す。
 
 * 同じプロジェクトで比較(資金提供前後で比較)
+
 * エンジニアリングに使った時に本当に開発が増えている？
 
 どんな質問が来るか考えておく
@@ -78,13 +79,13 @@ Rq1 個人に送る理由は？descriptionを調べる
 Rq2
 Rqに応えるためにどのデータが必要か勉強しないといけない。
 
-Kind,account_typeの意味
+Kind,account\_typeの意味
 
 テーブルのカラム一覧とその意味
 
 2026年2月18日
 
-Kind,account_typeの意味
+Kind,account\_typeの意味
 
 テーブルのカラム一覧とその意味
 
@@ -96,21 +97,21 @@ Descriptionのカテゴリを作る必要がある
 
 Engineergingのトランザクションか、エンジニアリングと関係ないものか
 
-expense_tagsがあるものを教師データとして、tagsを推定する機械学習モデルを作る
+expense\_tagsがあるものを教師データとして、tagsを推定する機械学習モデルを作る
 
 kind=expenseのデータのうち、個人は何%か、オーガニゼーションは何%か
-expense_tagsのランキングのうち、同じものをマージする。
+expense\_tagsのランキングのうち、同じものをマージする。
 
 Rq1,rq2に取り組む
 
 2026年3月13日
 
-SELECT * FROM public.collective_transactions
+SELECT \* FROM public.collective\_transactions
 where kind = 'EXPENSE';
 
 このデータを元にする。
 
-expense_tagsを元に、機械学習を利用して資金使用データを大分類し直すことはできた。次に、expense_descriptionを元にLLMを使用して大分類し直す。
+expense\_tagsを元に、機械学習を利用して資金使用データを大分類し直すことはできた。次に、expense\_descriptionを元にLLMを使用して大分類し直す。
 
 手動でいくつかのdescriptionを選んで、LLMに投げて良い分類ができるようにプロンプトチューニングする。
 
@@ -127,7 +128,7 @@ Conference はtravel
 
 Google gsodやドキュメント作成はnon-tech service
 クラウドじゃない場合はサブスク infra-subscribe
-開発と関係ない機会はfood&supplis
+開発と関係ない機会はfood\&supplis
 
 2026年4月17日
 
@@ -145,3 +146,10 @@ LLMを使うときにもっとcontextを教える。
 RQ3
 
 RQ2でdevelopmentに分類されたものを使用して分析し直す
+
+2026年4月22日
+
+LLMに与えるプロンプトのunknownの定義で、insufficientを使うのは良くない。
+
+LLMにラベルとconfidenceだけでなくreasonも出力させ、誤答の原因を調べる。
+
