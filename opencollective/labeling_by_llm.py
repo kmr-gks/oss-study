@@ -5,6 +5,7 @@ from sklearn.metrics import accuracy_score, f1_score, classification_report
 import os
 
 # ===== 設定 =====
+#MODEL = "gpt-5.4-mini"
 MODEL = "gpt-5.4"
 #ファイル名の末尾に日付時刻を付与
 OUTPUT_PATH = f"predictions_{pd.Timestamp.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
@@ -43,7 +44,9 @@ Categories:
 IMPORTANT:
 If the expense is related to creating or improving project documentation, treat it as "non-tech-activities", even if it involves participation in a program or event.
 For example, participation in programs such as Google Season of Docs (GSoD) should be classified as "non-tech-activities" when the purpose is documentation work for the project.
-- unknown: Use only when the purpose cannot be determined due to insufficient information.
+- unknown: Use when the meaning of the description itself cannot be understood.
+
+If the description is understandable but its relation to development is unclear, do not use "unknown" and instead classify it as "non-tech-activities".
 
 Descriptions may appear vague or incomplete. However, in many cases, they refer to development-related activities.
 If the purpose is not explicitly stated, infer the most likely purpose by reasonably completing the context (e.g., missing subject or implicit meaning).
@@ -69,8 +72,13 @@ Guidelines for confidence:
 - Medium (0.5–0.8): Some evidence but ambiguity exists
 - Low (0.0–0.5): Vague description or weak signals
 
+Reason guidelines:
+- Explain briefly WHY the category was selected (1–2 sentences).
+- Cite specific words or phrases from the description as evidence.
+- Do NOT repeat the full description.
+
 Output format:
-{{"label": "...", "confidence": "0.0-1.0"}}
+{{"label": "...", "confidence": "0.0-1.0", "reason": "..."}}
 
 description: "{description}"
 →
@@ -91,9 +99,10 @@ def classify(description):
 # ===== 出力パース =====
 def parse_label(output):
     try:
-        return json.loads(output)["label"],json.loads(output)["confidence"]
+        result = json.loads(output)
+        return result["label"], result["confidence"], result["reason"]
     except:
-        return "unknown", "0.0"
+        return "unknown", "0.0", ""
 
 
 # ===== 推論 =====
@@ -103,7 +112,7 @@ for i, row in df.iterrows():
     desc = row["expense_description"]
 
     output = classify(desc)
-    label,confidence = parse_label(output)
+    label, confidence, reason = parse_label(output)
 
     results.append({
         "index": i,
@@ -111,6 +120,7 @@ for i, row in df.iterrows():
         "true_label": row["manual_label_v2"],
         "predicted_label": label,
         "confidence": confidence,
+        "reason": reason,
         "is_correct": label == row["manual_label_v2"]
     })
 
