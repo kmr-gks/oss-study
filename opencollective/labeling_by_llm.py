@@ -4,9 +4,11 @@ from openai import OpenAI
 from sklearn.metrics import accuracy_score, f1_score, classification_report
 import os
 
-# ===== 設定 =====
+# ===== モデル =====
 #MODEL = "gpt-5.4-mini"
 MODEL = "gpt-5.4"
+#MODEL = "gpt-5.5"
+
 #ファイル名の末尾に日付時刻を付与
 OUTPUT_PATH = f"predictions_{pd.Timestamp.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
 if os.path.exists(OUTPUT_PATH):
@@ -77,6 +79,38 @@ Reason guidelines:
 - Cite specific words or phrases from the description as evidence.
 - Do NOT repeat the full description.
 
+Few-shot examples:
+
+Description: "Medical (Kidney Dialysis)"
+
+Output:
+{{"label":"non-tech-activities","reason":"The expense purpose is clearly medical support. Although its direct relation to OSS development is unclear, it is still an identifiable operational/community-related expense rather than an unknown description."}}
+
+Description: "Pizza for SysOps/DevOps Poland MeetUp in Warsaw on 22.02.2019"
+
+Output:
+{{"label":"food-supplies","reason":"The primary expense is food prepared for the meetup, not participation in the event itself. Therefore, the expense should be classified as food and supplies."}}
+
+Description: "Mail Chimp Email List - August 2018"
+
+Output:
+{{"label":"marketing-events","reason":"Mailchimp mailing lists are primarily used for project outreach, announcements, and promotion rather than infrastructure or development activities."}}
+
+Description: "Zoom (Feb-Nov)"
+
+Output:
+{{"label":"non-tech-activities","reason":"Zoom is most plausibly used for communication and coordination among project members rather than infrastructure hosting or direct software development."}}
+
+Description: "Co-Organizer Tasks and Trainings"
+
+Output:
+{{"label":"development","reason":"The terms 'Tasks' and 'Trainings' are most plausibly related to OSS development activities and contributor onboarding rather than general administration or outreach."}}
+
+Description: "UX Research Work"
+
+Output:
+{{"label":"development","reason":"UX-related work is treated as part of the software development process because it directly contributes to product and interface improvement."}}
+
 Output format:
 {{"label": "...", "confidence": "0.0-1.0", "reason": "..."}}
 
@@ -91,7 +125,7 @@ def classify(description):
     response = client.chat.completions.create(
         model=MODEL,
         messages=[{"role": "user", "content": prompt}],
-        temperature=0
+        #temperature=0
     )
     return response.choices[0].message.content
 
