@@ -45,17 +45,24 @@ bins_contrib = np.logspace(
 )
 
 plt.figure(figsize=(8, 5))
-
 plt.hist(contrib, bins=bins_contrib)
-
 plt.xscale("log")
-
 plt.xlabel("Contribution Amount (USD, log scale)")
 plt.ylabel("Number of Transactions")
 plt.title("Distribution of Contributions")
-
 plt.tight_layout()
-plt.show()
+plt.savefig("rq1_contribution_histogram_log.png")
+plt.close()
+
+plt.figure(figsize=(8, 5))
+plt.xlim(0, 1e3)
+plt.hist(contrib, bins=bins_contrib)
+plt.xlabel("Contribution Amount (USD, linear scale)")
+plt.ylabel("Number of Transactions")
+plt.title("Distribution of Contributions")
+plt.tight_layout()
+plt.savefig("rq1_contribution_histogram_linear.png")
+plt.close()
 
 # Expense Histogram
 
@@ -70,12 +77,20 @@ bins_expense = np.logspace(
 plt.figure(figsize=(8, 5))
 
 plt.hist(expense, bins=bins_expense)
-
 plt.xscale("log")
-
 plt.xlabel("Expense Amount (USD, log scale)")
 plt.ylabel("Number of Transactions")
 plt.title("Distribution of Expenses")
-
 plt.tight_layout()
-plt.show()
+plt.savefig("rq1_expense_histogram_log.png")
+plt.close()
+
+plt.figure(figsize=(8, 5))
+plt.xlim(0, 1e4)
+plt.hist(expense, bins=bins_expense)
+plt.xlabel("Expense Amount (USD, linear scale)")
+plt.ylabel("Number of Transactions")
+plt.title("Distribution of Expenses")
+plt.tight_layout()
+plt.savefig("rq1_expense_histogram_linear.png")
+plt.close()
