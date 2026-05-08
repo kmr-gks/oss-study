@@ -38,14 +38,16 @@ print("Expense transactions:", len(df_expense))
 # Contribution Histogram
 contrib = df_contrib["amount"]
 
-bins_contrib = np.logspace(
+bins_contrib_log = np.logspace(
     np.log10(contrib.min()),
     np.log10(contrib.max()),
     50
 )
 
+bins_contrib_linear = np.linspace(0, 1e3, 50)
+
 plt.figure(figsize=(8, 5))
-plt.hist(contrib, bins=bins_contrib)
+plt.hist(contrib, bins=bins_contrib_log)
 plt.xscale("log")
 plt.xlabel("Contribution Amount (USD, log scale)")
 plt.ylabel("Number of Transactions")
@@ -56,7 +58,7 @@ plt.close()
 
 plt.figure(figsize=(8, 5))
 plt.xlim(0, 1e3)
-plt.hist(contrib, bins=bins_contrib)
+plt.hist(contrib, bins=bins_contrib_linear)
 plt.xlabel("Contribution Amount (USD, linear scale)")
 plt.ylabel("Number of Transactions")
 plt.title("Distribution of Contributions")
@@ -68,15 +70,16 @@ plt.close()
 
 expense = df_expense["amount"]
 
-bins_expense = np.logspace(
+bins_expense_log = np.logspace(
     np.log10(expense.min()),
     np.log10(expense.max()),
     50
 )
+bins_expense_linear = np.linspace(0, 1e4, 50)
 
 plt.figure(figsize=(8, 5))
 
-plt.hist(expense, bins=bins_expense)
+plt.hist(expense, bins=bins_expense_log)
 plt.xscale("log")
 plt.xlabel("Expense Amount (USD, log scale)")
 plt.ylabel("Number of Transactions")
@@ -87,7 +90,7 @@ plt.close()
 
 plt.figure(figsize=(8, 5))
 plt.xlim(0, 1e4)
-plt.hist(expense, bins=bins_expense)
+plt.hist(expense, bins=bins_expense_linear)
 plt.xlabel("Expense Amount (USD, linear scale)")
 plt.ylabel("Number of Transactions")
 plt.title("Distribution of Expenses")
