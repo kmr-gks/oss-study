@@ -1,23 +1,20 @@
 from sqlalchemy import create_engine
 import pandas as pd
 import api
-import json
 
 # PostgreSQL接続
 engine = create_engine(
-    f"postgresql+psycopg2://postgres:{api.load_sql_password_from_credentials()}@localhost:5432/opencollective"
+  f"postgresql+psycopg2://postgres:{api.load_sql_password_from_credentials()}@localhost:5432/opencollective"
 )
 
 # Contribution データ取得
 query = """
-
-  SELECT
-    id,
-    expense_description
-  FROM collective_transactions
-  WHERE kind = 'EXPENSE' and amount_currency = 'USD'
-  ORDER BY random()
-  LIMIT 5
+SELECT
+  id,
+  expense_description
+FROM collective_transactions
+WHERE kind = 'EXPENSE' and amount_currency = 'USD'
+ORDER BY random()
 """
 
 df_sql = pd.read_sql(query, engine)
