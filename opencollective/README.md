@@ -69,7 +69,14 @@ psql -U postgres -d opencollective -f .\select_rows_randomly.sql > expenses_rand
 
 export OPENAI_API_KEY="your-api-key"
 python labeling_by_llm.py
-python labeling_all_expense_by_llm.py
+python heatmap.py
+
+# RQ1
+psql -U postgres -d opencollective -f .\rq1.sql
+python rq1histgram.py
+
+#2nd random sampling
+python random_sampling_2nd.py
 ```
 
 ## ファイル構成
@@ -105,11 +112,11 @@ OpenCollectiveのAPIを利用して、特定のプロジェクトの財務デー
 
 ### backup:
 
-pg_dumpall -U postgres -f ".\logs\pg_all_$(Get-Date -Format yyyyMMdd_HHmm).sql"
+pg\_dumpall -U postgres -f ".\logs\pg\_all\_\$(Get-Date -Format yyyyMMdd\_HHmm).sql"
 
 ### password
 
-~\AppData\Roaming\postgresql\pgpass.conf
+\~\AppData\Roaming\postgresql\pgpass.conf
 
 ```
 localhost:5432:*:postgres:your_password
