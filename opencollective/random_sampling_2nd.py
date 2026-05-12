@@ -36,11 +36,6 @@ df_new_candidates = df_sql[
     ~df_sql["expense_description"].isin(existing_descriptions)
 ]
 
-# SQL内の重複descriptionも除去
-df_new_candidates = df_new_candidates.drop_duplicates(
-    subset=["expense_description"]
-)
-
 # ランダムサンプリング
 df_new_sample = df_new_candidates.sample(
     n=381,
