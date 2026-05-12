@@ -30,6 +30,14 @@ df_sql = pd.read_sql(query, engine)
 # 既存ラベル済みデータ
 df_csv = pd.read_csv("expenses_random_order_v2.csv")[["expense_description"]]
 
+# 欠損除外
+df_sql = df_sql.dropna(subset=["expense_description"])
+df_csv = df_csv.dropna(subset=["expense_description"])
+
+# 前後空白除去
+df_sql["expense_description"] = df_sql["expense_description"].str.strip()
+df_csv["expense_description"] = df_csv["expense_description"].str.strip()
+
 # description重複除外
 existing_descriptions = set(df_csv["expense_description"])
 df_new_candidates = df_sql[
