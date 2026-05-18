@@ -129,3 +129,5 @@ OSSプロジェクトの資金活用実態の解明
 
 日本語:
 OSSの持続可能性確保に向け資金援助が活発化しているが、その規模や使途、開発への影響は不明である。本研究は資金提供の実態解明を試みた。具体的には、資金提供の全体規模とプロジェクトごとの偏りを提示し、支出データを開発費や活動費等に分類して使途を精査する。さらに、資金獲得前後での開発活動の変化を比較・検証する。本成果は、今後の持続可能なOSS支援エコシステムを設計する指針となる。
+
+Financial support for ensuring the sustainability of Open Source Software (OSS) has been growing. However, its overall scale, how the funds are used, and its impact on development remain unclear. This study aims to clarify the reality of OSS funding. Specifically, we reveal the total scale of funding and its unequal distribution among projects. We also examine how funds are used by classifying expense data into categories such as development and non-technical activities. Furthermore, we compare and analyze changes in development activities before and after receiving funds. Our findings will provide a guideline for designing a sustainable OSS support ecosystem in the future.
