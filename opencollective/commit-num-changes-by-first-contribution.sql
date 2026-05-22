@@ -1,6 +1,7 @@
 -- GitHub リポジトリが特定できた OpenCollective プロジェクトについて、
 -- 最初の資金提供（CONTRIBUTION）の前後90日間で、
 -- そのリポジトリのコミット数がどれだけ変化したか
+-- collectiveテーブルではgithubアカウント名とリポジトリ名が'/'で区切られているが、commit_historyでは'-'で区切られていることに注意。
 
 set client_encoding to UTF8;
 
