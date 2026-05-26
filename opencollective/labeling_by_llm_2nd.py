@@ -41,7 +41,6 @@ Select the SINGLE most appropriate category from the list below.
 
 Categories:
 - development: Compensation paid to official project members for direct software development, PR (Pull Request), and maintenance.
-- bounty: Rewards or fees paid to external contributors (non-members) for specific tasks, bug fixes, feature implementations, or other contributions.
 - infra-subscription: Recurring costs for cloud hosting, internet connectivity, and other software-as-a-service (SaaS) subscriptions.
 - equipment: Purchase of physical hardware and assets directly used for development activities, such as laptops and servers.
 - food-supplies: Purchase of consumables, meals, and general physical items that are not directly related to development.
@@ -50,28 +49,23 @@ Categories:
 IMPORTANT:
 If the expense is related to creating or improving project documentation, treat it as "non-tech-activities", even if it involves participation in a program or event.
 For example, participation in programs such as Google Season of Docs (GSoD) should be classified as "non-tech-activities" when the purpose is documentation work for the project.
-- unknown: Use when the meaning of the description itself cannot be understood.
+- unknown: Use when the meaning of the description itself cannot be understood or confidence is very low. When the label cannot confidently be assigned.
 
-If the description is understandable but its relation to development is unclear, do not use "unknown" and instead classify it as "non-tech-activities".
+If the description is understandable but its relation to development is unclear, use "unknown".
 
 Descriptions may appear vague or incomplete. However, in many cases, they refer to development-related activities.
 If the purpose is not explicitly stated, infer the most likely purpose by reasonably completing the context (e.g., missing subject or implicit meaning).
 When making such inferences:
 - Use common patterns in OSS projects (e.g., contributions, maintenance, works, docs).
-- Prefer the most plausible category based on context.
+- Only infer when the inferred word is highly confident based on context.
 
 However:
 - Do NOT guess randomly.
-- If there is truly no reasonable interpretation → choose "unknown".
+- If confidence is not high, choose "unknown".
 
 Rules:
 - Choose exactly ONE category
-- If no clear purpose → choose unknown
-
-Confidence definition:
-- 0.0 = pure guess (almost no evidence)
-- 0.5 = ambiguous (multiple categories plausible)
-- 1.0 = almost certain (clear and explicit evidence)
+- If no clear purpose, choose unknown
 
 Guidelines for confidence:
 - High (0.8–1.0): Explicit keywords strongly match a category (e.g., "AWS", "server", "bug bounty")
@@ -84,6 +78,9 @@ Reason guidelines:
 - Do NOT repeat the full description.
 
 Few-shot examples:
+
+Description: "Miriam Suzanne (OddBird) consulting"
+Output:{{"label":"unknown","reason":"The description is vague and does not provide enough information to confidently classify it into any specific category. 'consulting' could relate to various activities such as development, marketing, or non-tech tasks. Without additional context, it is safest to classify this as 'unknown'."}}
 
 Description: "Medical (Kidney Dialysis)"
 
