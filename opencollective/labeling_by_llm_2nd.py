@@ -23,9 +23,11 @@ client = OpenAI()
 df = pd.read_csv("expenses_random_order_2nd.csv")
 
 # 新しい列を追加(空の文字列で初期化)
-df["manual_label"] = ""
 
 df = df[["expense_description", "manual_label"]].dropna()
+
+#手動分類のラベルのbountyをdevelopmentに置換
+df["manual_label"] = df["manual_label"].replace("bounty", "development")
 
 # ===== プロンプト =====
 def build_prompt(description):
