@@ -26,6 +26,8 @@ df = df[["expense_description", "manual_label"]].dropna()
 
 #手動分類のラベルのbountyをdevelopmentに置換
 df["manual_label"] = df["manual_label"].replace("bounty", "development")
+#development以外のラベルをothersに統一
+df["manual_label"] = df["manual_label"].replace(["infra-subscription", "equipment", "food-supplies", "marketing-events", "non-tech-activities", "unknown"], "others")
 
 # ===== プロンプト =====
 def build_prompt(description):
