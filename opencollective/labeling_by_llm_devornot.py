@@ -10,7 +10,7 @@ MODEL = "gpt-5.4"
 #MODEL = "gpt-5.5"
 
 #ファイル名の末尾に日付時刻を付与
-OUTPUT_PATH = f"predictions_2nd_{pd.Timestamp.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
+OUTPUT_PATH = f"predictions_2nd_devornot_{pd.Timestamp.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
 if os.path.exists(OUTPUT_PATH):
 	print(f"{OUTPUT_PATH} already exists.")
 	exit(1)
