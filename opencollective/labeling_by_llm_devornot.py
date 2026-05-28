@@ -41,17 +41,9 @@ Select the SINGLE most appropriate category from the list below.
 
 Categories:
 - development: Compensation paid to official project members for direct software development, PR (Pull Request), and maintenance.
-- infra-subscription: Recurring costs for cloud hosting, internet connectivity, and other software-as-a-service (SaaS) subscriptions.
-- equipment: Purchase of physical hardware and assets directly used for development activities, such as laptops and servers.
-- food-supplies: Purchase of consumables, meals, and general physical items that are not directly related to development.
-- marketing-events: Costs for organizing or participating in events to promote the project and recruit new developers (includes marketing, social media promotion, transportation, conference registration fees).
-- non-tech-activities: Essential project-related tasks that are not directly linked to coding, such as documentation, translation, technical writing, legal or tax compliance, accounting, and general administrative work.
+- others: Expenses that are not directly for software development. This includes infrastructure, hosting, SaaS subscriptions, equipment, food, travel, events, marketing, documentation, translation, legal work, tax/accounting, administration, community support, medical or personal support, general meetings, and unclear or ambiguous expenses.
 IMPORTANT:
-If the expense is related to creating or improving project documentation, treat it as "non-tech-activities", even if it involves participation in a program or event.
-For example, participation in programs such as Google Season of Docs (GSoD) should be classified as "non-tech-activities" when the purpose is documentation work for the project.
-- unknown: Use when the meaning of the description itself cannot be understood or confidence is very low. When the label cannot confidently be assigned.
-
-If the description is understandable but its relation to development is unclear, use "unknown".
+Classify as "development" only when the description clearly indicates direct work on the software product or technical maintenance of the project.
 
 Descriptions may appear vague or incomplete. However, in many cases, they refer to development-related activities.
 If the purpose is not explicitly stated, infer the most likely purpose by reasonably completing the context (e.g., missing subject or implicit meaning).
@@ -61,11 +53,9 @@ When making such inferences:
 
 However:
 - Do NOT guess randomly.
-- If confidence is not high, choose "unknown".
 
 Rules:
 - Choose exactly ONE category
-- If no clear purpose, choose unknown
 
 Guidelines for confidence:
 - High (0.8–1.0): Explicit keywords strongly match a category (e.g., "AWS", "server", "bug bounty")
@@ -80,27 +70,27 @@ Reason guidelines:
 Few-shot examples:
 
 Description: "Miriam Suzanne (OddBird) consulting"
-Output:{{"label":"unknown","reason":"The description is vague and does not provide enough information to confidently classify it into any specific category. 'consulting' could relate to various activities such as development, marketing, or non-tech tasks. Without additional context, it is safest to classify this as 'unknown'."}}
+Output:{{"label":"others","reason":"The description is vague and does not provide enough information to confidently classify it into any specific category. 'consulting' could relate to various activities such as development, marketing, or non-tech tasks. Without additional context, it is safest to classify this as 'others'."}}
 
 Description: "Medical (Kidney Dialysis)"
 
 Output:
-{{"label":"non-tech-activities","reason":"The expense purpose is clearly medical support. Although its direct relation to OSS development is unclear, it is still an identifiable operational/community-related expense rather than an unknown description."}}
+{{"label":"others","reason":"The expense purpose is clearly medical support. Although its direct relation to OSS development is unclear, it is still an identifiable operational/community-related expense rather than an unknown description."}}
 
 Description: "Pizza for SysOps/DevOps Poland MeetUp in Warsaw on 22.02.2019"
 
 Output:
-{{"label":"food-supplies","reason":"The primary expense is food prepared for the meetup, not participation in the event itself. Therefore, the expense should be classified as food and supplies."}}
+{{"label":"others","reason":"The primary expense is food prepared for the meetup, not participation in the event itself. Therefore, the expense should be classified as others."}}
 
 Description: "Mail Chimp Email List - August 2018"
 
 Output:
-{{"label":"marketing-events","reason":"Mailchimp mailing lists are primarily used for project outreach, announcements, and promotion rather than infrastructure or development activities."}}
+{{"label":"others","reason":"Mailchimp mailing lists are primarily used for project outreach, announcements, and promotion rather than infrastructure or development activities."}}
 
 Description: "Zoom (Feb-Nov)"
 
 Output:
-{{"label":"non-tech-activities","reason":"Zoom is most plausibly used for communication and coordination among project members rather than infrastructure hosting or direct software development."}}
+{{"label":"others","reason":"Zoom is most plausibly used for communication and coordination among project members rather than infrastructure hosting or direct software development."}}
 
 Description: "Co-Organizer Tasks and Trainings"
 
