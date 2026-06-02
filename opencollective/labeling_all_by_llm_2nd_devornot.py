@@ -7,8 +7,8 @@ import psycopg2
 
 
 # ===== モデル =====
-#MODEL = "gpt-5.4-mini"
-MODEL = "gpt-5.4"
+MODEL = "gpt-5.4-mini"
+#MODEL = "gpt-5.4"
 #MODEL = "gpt-5.5"
 
 #ファイル名の末尾に日付時刻を付与
