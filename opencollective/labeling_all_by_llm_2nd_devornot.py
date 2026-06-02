@@ -1,7 +1,6 @@
 import pandas as pd
 import json
 from openai import OpenAI
-from sklearn.metrics import accuracy_score, f1_score, classification_report
 import os
 import api
 import psycopg2
@@ -109,7 +108,7 @@ def classify(description):
     response = client.chat.completions.create(
         model=MODEL,
         messages=[{"role": "user", "content": prompt}],
-        temperature=0
+        #temperature=0
     )
 
     return response.choices[0].message.content
@@ -118,9 +117,11 @@ def classify(description):
 # ===== 出力パース =====
 def parse_label(output):
     try:
-        return json.loads(output)["label"]
+        result = json.loads(output)
+        return result["label"], result["confidence"], result["reason"]
     except:
-        return "unknown"
+        return "unknown", "0.0", ""
+
 
 # DB接続
 conn = psycopg2.connect(
@@ -146,15 +147,33 @@ cur.execute(query)
 # 取得して表示
 rows = cur.fetchall()
 
+results = []
 for i, row in enumerate(rows):
-    print(f"{i+1}/{len(rows)}: {row[0]}, {row[1]}")
-    output = classify(row[1])
-    label = parse_label(output)
+    desc=row[1]
+    print(f"{i+1}/{len(rows)}: {row[0]}, {desc}")
+    output = classify(desc)
+    label, confidence, reason = parse_label(output)
 
-conn.commit()
+    results.append({
+        "index": i,
+        "expense_description": desc,
+        "predicted_label": label,
+        "confidence": confidence,
+        "reason": reason,
+    })
+
+    # --- 途中保存（10件ごと） ---
+    if i % 10 == 0:
+        pd.DataFrame(results).to_csv(OUTPUT_PATH, index=False)
 
 # 後処理
 cur.close()
 conn.close()
+
+# ===== 最終保存 =====
+results_df = pd.DataFrame(results)
+results_df.to_csv(OUTPUT_PATH, index=False)
+
+print(f"\nSaved to {OUTPUT_PATH}")
 
 exit(0)
