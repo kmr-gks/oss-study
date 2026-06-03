@@ -77,6 +77,11 @@ python pq1histgram.py
 
 #2nd random sampling
 python random_sampling_2nd.py
+
+#RQ1
+
+#RQ2
+
 ```
 
 ## ファイル構成

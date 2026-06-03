@@ -235,7 +235,7 @@ def analyze_commit_change(window_months: int):
     # 結果表示
     # =========================
 
-    print(f"\n===== RQ3: Commit Activity Around Open Collective Registration ({window_months} months) =====")
+    print(f"\n===== RQ2: Commit Activity Around Open Collective Registration ({window_months} months) =====")
     print(f"N analyzed: {N}")
 
     print("\n--- Before / After commits ---")
@@ -265,8 +265,8 @@ def analyze_commit_change(window_months: int):
     # CSV保存
     # =========================
 
-    result_filename = f"rq3_commit_change_around_opencollective_registration_{label}.csv"
-    summary_filename = f"rq3_commit_change_summary_{label}.csv"
+    result_filename = f"rq2_commit_change_around_opencollective_registration_{label}.csv"
+    summary_filename = f"rq2_commit_change_summary_{label}.csv"
 
     df_result.to_csv(result_filename, index=False)
 
@@ -318,8 +318,8 @@ for window_months in [3, 6, 12]:
 df_all_summaries = pd.concat(all_summaries, ignore_index=True)
 df_all_results = pd.concat(all_results, ignore_index=True)
 
-df_all_summaries.to_csv("rq3_commit_change_summary_all_windows.csv", index=False)
-df_all_results.to_csv("rq3_commit_change_all_windows.csv", index=False)
+df_all_summaries.to_csv("rq2_commit_change_summary_all_windows.csv", index=False)
+df_all_results.to_csv("rq2_commit_change_all_windows.csv", index=False)
 
 print("\n===== Summary across all windows =====")
 print(df_all_summaries)
