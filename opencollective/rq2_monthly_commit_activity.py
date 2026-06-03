@@ -174,16 +174,55 @@ print("\n===== Monthly summary =====")
 print(df_summary)
 
 # =========================
+# 8.5 print表示
+# =========================
+
+# 12ヶ月単位で見たコミットの平均と中央値
+#    各プロジェクトについて、加入前12ヶ月・加入後12ヶ月の合計コミット数を出してから、
+#    その平均・中央値を計算する
+df_12month_project = (
+    df_monthly
+    .groupby(["id", "repo_name", "period"])
+    .agg(
+        total_commits_12m=("commit_count", "sum")
+    )
+    .reset_index()
+)
+
+df_12month_summary = (
+    df_12month_project
+    .groupby("period")
+    .agg(
+        mean_commits_12m=("total_commits_12m", "mean"),
+        median_commits_12m=("total_commits_12m", "median"),
+        n_projects=("total_commits_12m", "count")
+    )
+    .reset_index()
+)
+
+# before, after の順で表示する
+df_12month_summary["period"] = pd.Categorical(
+    df_12month_summary["period"],
+    categories=["before", "after"],
+    ordered=True
+)
+
+df_12month_summary = df_12month_summary.sort_values("period")
+
+print("\n===== 12-month total commit counts: before vs after =====")
+print(df_12month_summary.to_string(index=False))
+
+# =========================
 # 9. CSV保存
 # =========================
 
 df_monthly.to_csv(
-    "rq_monthly_commits_around_opencollective_registration_project_level.csv",
+    "rq2_monthly_commits_around_opencollective_registration_project_level.csv",
     index=False
 )
 
 df_summary.to_csv(
-    "rq_monthly_commits_around_opencollective_registration_summary.csv",
+    "rq2_monthly_commits_around_opencollective_registration_summary.csv",
     index=False
 )
 
