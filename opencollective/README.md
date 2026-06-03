@@ -71,9 +71,9 @@ export OPENAI_API_KEY="your-api-key"
 python labeling_by_llm.py
 python heatmap.py
 
-# RQ1
-psql -U postgres -d opencollective -f .\rq1.sql
-python rq1histgram.py
+# PQ1
+psql -U postgres -d opencollective -f .\pq1.sql
+python pq1histgram.py
 
 #2nd random sampling
 python random_sampling_2nd.py
@@ -121,7 +121,6 @@ pg\_dumpall -U postgres -f ".\logs\pg\_all\_\$(Get-Date -Format yyyyMMdd\_HHmm).
 ```
 localhost:5432:*:postgres:your_password
 ```
-
 
 ### SIGSS 202607 のアブストラクト
 
