@@ -35,6 +35,8 @@ for i, path in enumerate(CSV_FILES, start=1):
         "predicted_label",
         "confidence",
         PROJECT_COL,
+        "amount_value",
+        "amount_currency",
     }
     missing_cols = required_cols - set(df.columns)
     if missing_cols:
@@ -50,6 +52,7 @@ for i, path in enumerate(CSV_FILES, start=1):
     )
 
     df["confidence"] = pd.to_numeric(df["confidence"], errors="coerce")
+    df["amount_value"] = pd.to_numeric(df["amount_value"], errors="coerce")
 
     df[f"is_development_run{i}"] = (
         (df["predicted_label"] == "development") &
@@ -63,20 +66,30 @@ for i, path in enumerate(CSV_FILES, start=1):
                     "index",
                     "expense_description",
                     PROJECT_COL,
+                    "amount_value",
+                    "amount_currency",
                     f"is_development_run{i}",
                 ]
             ]
         )
     else:
-        # 念のため project_slug も残して整合性確認に使う
+        # 整合性確認用に project_slug, amount_value, amount_currency も残す
         dfs.append(
             df[
                 [
                     "index",
                     PROJECT_COL,
+                    "amount_value",
+                    "amount_currency",
                     f"is_development_run{i}",
                 ]
-            ].rename(columns={PROJECT_COL: f"{PROJECT_COL}_run{i}"})
+            ].rename(
+                columns={
+                    PROJECT_COL: f"{PROJECT_COL}_run{i}",
+                    "amount_value": f"amount_value_run{i}",
+                    "amount_currency": f"amount_currency_run{i}",
+                }
+            )
         )
 
 # index をキーに横結合
@@ -101,18 +114,62 @@ for i in range(2, 6):
             f"run{i} で project_slug が一致しない行があります: {mismatch_count} rows"
         )
 
+# amount_value が5ファイルで一致しているか確認
+# NaN 同士は一致扱いにする
+for i in range(2, 6):
+    mismatch_count = ~(
+        df_expense["amount_value"].fillna("__NA__").astype(str)
+        ==
+        df_expense[f"amount_value_run{i}"].fillna("__NA__").astype(str)
+    )
+
+    mismatch_count = mismatch_count.sum()
+
+    if mismatch_count > 0:
+        print(
+            f"Warning: run{i} で amount_value が一致しない行があります: "
+            f"{mismatch_count} rows"
+        )
+
+# amount_currency は今回は無視するが、分布だけ確認
+print("\n===== Amount currency distribution in run1 =====")
+print(df_expense["amount_currency"].value_counts(dropna=False))
+
 # 5回すべて development かつ confidence >= 0.9
 run_cols = [f"is_development_run{i}" for i in range(1, 6)]
 df_expense["is_development"] = df_expense[run_cols].all(axis=1)
+
+# 支出額は負の値なので絶対値にする
+# 誤って正の値になっている場合も abs() により支出額として扱う
+df_expense["expense_amount"] = df_expense["amount_value"].abs()
+
+# amount_value が欠損、または 0 の行は金額ベース分析からは除外
+df_expense = df_expense[
+    df_expense["expense_amount"].notna() &
+    (df_expense["expense_amount"] > 0)
+].copy()
 
 print("\n===== Expense classification summary =====")
 print("Total expense rows:", len(df_expense))
 print("Development expense rows:", df_expense["is_development"].sum())
 print("Non-development expense rows:", (~df_expense["is_development"]).sum())
+print("Total expense amount:", df_expense["expense_amount"].sum())
+print(
+    "Development expense amount:",
+    df_expense.loc[df_expense["is_development"], "expense_amount"].sum()
+)
 
 # ============================================================
-# 2. プロジェクトごとの development 使用回数割合を計算
+# 2. プロジェクトごとの development 使用割合を計算
+#    - 回数ベース
+#    - 金額ベース
 # ============================================================
+
+df_expense["development_amount"] = np.where(
+    df_expense["is_development"],
+    df_expense["expense_amount"],
+    0.0
+)
 
 df_project_spending = (
     df_expense
@@ -120,13 +177,22 @@ df_project_spending = (
     .agg(
         total_expense_count=("index", "count"),
         development_expense_count=("is_development", "sum"),
+        total_expense_amount=("expense_amount", "sum"),
+        development_expense_amount=("development_amount", "sum"),
     )
     .reset_index()
 )
 
+# 回数ベースの割合
 df_project_spending["development_count_ratio"] = (
     df_project_spending["development_expense_count"] /
     df_project_spending["total_expense_count"]
+)
+
+# 金額ベースの割合
+df_project_spending["development_amount_ratio"] = (
+    df_project_spending["development_expense_amount"] /
+    df_project_spending["total_expense_amount"]
 )
 
 # 0-10%, 10-20%, ..., 90-100% にビン分け
@@ -144,8 +210,17 @@ df_project_spending["development_count_ratio_bin"] = pd.cut(
     right=True
 )
 
-print("\n===== Project development count ratio summary =====")
+df_project_spending["development_amount_ratio_bin"] = pd.cut(
+    df_project_spending["development_amount_ratio"],
+    bins=bins,
+    labels=labels,
+    include_lowest=True,
+    right=True
+)
+
+print("\n===== Project development ratio summary =====")
 print("Projects with expense data:", len(df_project_spending))
+
 print(
     df_project_spending[
         [
@@ -154,6 +229,10 @@ print(
             "development_expense_count",
             "development_count_ratio",
             "development_count_ratio_bin",
+            "total_expense_amount",
+            "development_expense_amount",
+            "development_amount_ratio",
+            "development_amount_ratio_bin",
         ]
     ].head()
 )
@@ -161,6 +240,13 @@ print(
 print("\n===== Number of projects by development count ratio bin =====")
 print(
     df_project_spending["development_count_ratio_bin"]
+    .value_counts()
+    .sort_index()
+)
+
+print("\n===== Number of projects by development amount ratio bin =====")
+print(
+    df_project_spending["development_amount_ratio_bin"]
     .value_counts()
     .sort_index()
 )
@@ -337,6 +423,40 @@ df_box_summary.to_csv(
 )
 
 # ============================================================
+# 5.5 金額ベースのビンごとの記述統計を表示
+# ============================================================
+
+df_amount_box_summary = (
+    df_analysis
+    .groupby("development_amount_ratio_bin", observed=False)
+    .agg(
+        n_projects=("log_change", "count"),
+        mean_log_change=("log_change", "mean"),
+        min_log_change=("log_change", "min"),
+        q1_log_change=("log_change", lambda x: x.quantile(0.25)),
+        median_log_change=("log_change", "median"),
+        q3_log_change=("log_change", lambda x: x.quantile(0.75)),
+        max_log_change=("log_change", "max"),
+        mean_total_expense_amount=("total_expense_amount", "mean"),
+        median_total_expense_amount=("total_expense_amount", "median"),
+        mean_development_expense_amount=("development_expense_amount", "mean"),
+        median_development_expense_amount=("development_expense_amount", "median"),
+        mean_total_expense_count=("total_expense_count", "mean"),
+        median_total_expense_count=("total_expense_count", "median"),
+    )
+    .reset_index()
+)
+
+print("\n===== Log change summary by development amount ratio bin =====")
+print(df_amount_box_summary.to_string(index=False))
+
+df_amount_box_summary.to_csv(
+    "rq2_development_amount_ratio_and_commit_log_change_boxplot_summary.csv",
+    index=False
+)
+
+
+# ============================================================
 # 6. 箱ひげ図を描画
 # ============================================================
 
@@ -371,6 +491,46 @@ plt.tight_layout()
 
 plt.savefig(
     "rq2_boxplot_commit_log_change_by_development_expense_count_ratio.png",
+    dpi=300
+)
+
+plt.show()
+
+# ============================================================
+# 6.5 金額ベースの箱ひげ図を描画
+# ============================================================
+
+amount_plot_data = [
+    df_analysis.loc[
+        df_analysis["development_amount_ratio_bin"] == label,
+        "log_change"
+    ].dropna()
+    for label in labels
+]
+
+plt.figure(figsize=(14, 7))
+
+plt.boxplot(
+    amount_plot_data,
+    labels=labels,
+    showmeans=True
+)
+
+plt.axhline(
+    y=0,
+    linestyle="--",
+    linewidth=1
+)
+
+plt.xlabel("Share of expense amount classified as development")
+plt.ylabel("Commit log change: log1p(after 12m) - log1p(before 12m)")
+plt.title("Commit activity change by development expense amount ratio")
+plt.xticks(rotation=45)
+plt.grid(axis="y", alpha=0.3)
+plt.tight_layout()
+
+plt.savefig(
+    "rq2_boxplot_commit_log_change_by_development_expense_amount_ratio.png",
     dpi=300
 )
 
