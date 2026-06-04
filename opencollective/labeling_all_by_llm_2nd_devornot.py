@@ -136,7 +136,7 @@ cur = conn.cursor()
 
 # SQL実行
 query = """
-SELECT id, project_slug, expense_description
+SELECT id, project_slug, expense_description, amount_value, amount_currency
 FROM public.collective_transactions
 WHERE kind = 'EXPENSE'
 ORDER BY id ASC;
@@ -151,6 +151,8 @@ results = []
 for i, row in enumerate(rows):
     project_slug = row[1]
     desc = row[2]
+    amount_value = row[3]
+    amount_currency = row[4]
     print(f"{i+1}/{len(rows)}: {row[0]}, {project_slug}, {desc}")
     output = classify(desc)
     label, confidence, reason = parse_label(output)
@@ -162,6 +164,8 @@ for i, row in enumerate(rows):
         "predicted_label": label,
         "confidence": confidence,
         "reason": reason,
+        "amount_value": amount_value,
+        "amount_currency": amount_currency
     })
 
     # --- 途中保存（10件ごと） ---
