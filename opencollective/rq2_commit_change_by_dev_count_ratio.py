@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sqlalchemy import create_engine
+from forex_python.converter import CurrencyRates
 
 # ============================================================
 # 設定
@@ -19,6 +20,7 @@ CSV_FILES = [
 PROJECT_COL = "project_slug"
 CONFIDENCE_THRESHOLD = 0.9
 WINDOW_MONTHS = 12
+BASE_CURRENCY = "USD"
 
 # ============================================================
 # 1. 5つのCSVを読み込み、5回すべて development かつ confidence >= 0.9 を判定
@@ -139,24 +141,83 @@ print(df_expense["amount_currency"].value_counts(dropna=False))
 run_cols = [f"is_development_run{i}" for i in range(1, 6)]
 df_expense["is_development"] = df_expense[run_cols].all(axis=1)
 
+# ============================================================
+# amount_currency を使って支出額を USD に変換
+# ============================================================
+
+df_expense["amount_currency"] = (
+    df_expense["amount_currency"]
+    .astype(str)
+    .str.strip()
+    .str.upper()
+)
+
 # 支出額は負の値なので絶対値にする
 # 誤って正の値になっている場合も abs() により支出額として扱う
-df_expense["expense_amount"] = df_expense["amount_value"].abs()
+df_expense["expense_amount_original"] = df_expense["amount_value"].abs()
 
-# amount_value が欠損、または 0 の行は金額ベース分析からは除外
+# amount_value が欠損、0、または通貨コード欠損の行は除外
 df_expense = df_expense[
-    df_expense["expense_amount"].notna() &
-    (df_expense["expense_amount"] > 0)
+    df_expense["expense_amount_original"].notna() &
+    (df_expense["expense_amount_original"] > 0) &
+    df_expense["amount_currency"].notna() &
+    (df_expense["amount_currency"] != "") &
+    (df_expense["amount_currency"] != "NAN")
 ].copy()
 
-print("\n===== Expense classification summary =====")
+currency_rates = CurrencyRates()
+
+unique_currencies = sorted(df_expense["amount_currency"].dropna().unique())
+
+exchange_rates_to_usd = {}
+
+for currency in unique_currencies:
+    if currency == BASE_CURRENCY:
+        exchange_rates_to_usd[currency] = 1.0
+    else:
+        try:
+            exchange_rates_to_usd[currency] = currency_rates.get_rate(
+                currency,
+                BASE_CURRENCY
+            )
+        except Exception as e:
+            print(f"Warning: failed to get exchange rate {currency} -> USD: {e}")
+            exchange_rates_to_usd[currency] = np.nan
+
+print("\n===== Exchange rates to USD =====")
+for currency, rate in exchange_rates_to_usd.items():
+    print(f"{currency} -> USD: {rate}")
+
+df_expense["exchange_rate_to_usd"] = (
+    df_expense["amount_currency"]
+    .map(exchange_rates_to_usd)
+)
+
+# 為替レートを取得できなかった通貨は除外
+missing_rate_rows = df_expense["exchange_rate_to_usd"].isna().sum()
+
+if missing_rate_rows > 0:
+    print(
+        f"\nWarning: excluding rows with missing exchange rates: "
+        f"{missing_rate_rows}"
+    )
+
+df_expense = df_expense[
+    df_expense["exchange_rate_to_usd"].notna()
+].copy()
+
+# USD換算後の支出額
+df_expense["expense_amount_usd"] = (
+    df_expense["expense_amount_original"] *
+    df_expense["exchange_rate_to_usd"]
+)
+
+print("\n===== Expense amount summary =====")
 print("Total expense rows:", len(df_expense))
-print("Development expense rows:", df_expense["is_development"].sum())
-print("Non-development expense rows:", (~df_expense["is_development"]).sum())
-print("Total expense amount:", df_expense["expense_amount"].sum())
+print("Total expense amount USD:", df_expense["expense_amount_usd"].sum())
 print(
-    "Development expense amount:",
-    df_expense.loc[df_expense["is_development"], "expense_amount"].sum()
+    "Development expense amount USD:",
+    df_expense.loc[df_expense["is_development"], "expense_amount_usd"].sum()
 )
 
 # ============================================================
@@ -165,9 +226,9 @@ print(
 #    - 金額ベース
 # ============================================================
 
-df_expense["development_amount"] = np.where(
+df_expense["development_amount_usd"] = np.where(
     df_expense["is_development"],
-    df_expense["expense_amount"],
+    df_expense["expense_amount_usd"],
     0.0
 )
 
@@ -177,8 +238,8 @@ df_project_spending = (
     .agg(
         total_expense_count=("index", "count"),
         development_expense_count=("is_development", "sum"),
-        total_expense_amount=("expense_amount", "sum"),
-        development_expense_amount=("development_amount", "sum"),
+        total_expense_amount_usd=("expense_amount_usd", "sum"),
+        development_expense_amount_usd=("development_amount_usd", "sum"),
     )
     .reset_index()
 )
@@ -191,8 +252,8 @@ df_project_spending["development_count_ratio"] = (
 
 # 金額ベースの割合
 df_project_spending["development_amount_ratio"] = (
-    df_project_spending["development_expense_amount"] /
-    df_project_spending["total_expense_amount"]
+    df_project_spending["development_expense_amount_usd"] /
+    df_project_spending["total_expense_amount_usd"]
 )
 
 # 0-10%, 10-20%, ..., 90-100% にビン分け
@@ -229,8 +290,8 @@ print(
             "development_expense_count",
             "development_count_ratio",
             "development_count_ratio_bin",
-            "total_expense_amount",
-            "development_expense_amount",
+            "total_expense_amount_usd",
+            "development_expense_amount_usd",
             "development_amount_ratio",
             "development_amount_ratio_bin",
         ]
@@ -437,10 +498,10 @@ df_amount_box_summary = (
         median_log_change=("log_change", "median"),
         q3_log_change=("log_change", lambda x: x.quantile(0.75)),
         max_log_change=("log_change", "max"),
-        mean_total_expense_amount=("total_expense_amount", "mean"),
-        median_total_expense_amount=("total_expense_amount", "median"),
-        mean_development_expense_amount=("development_expense_amount", "mean"),
-        median_development_expense_amount=("development_expense_amount", "median"),
+        mean_total_expense_amount_usd=("total_expense_amount_usd", "mean"),
+        median_total_expense_amount_usd=("total_expense_amount_usd", "median"),
+        mean_development_expense_amount_usd=("development_expense_amount_usd", "mean"),
+        median_development_expense_amount_usd=("development_expense_amount_usd", "median"),
         mean_total_expense_count=("total_expense_count", "mean"),
         median_total_expense_count=("total_expense_count", "median"),
     )
