@@ -136,7 +136,7 @@ cur = conn.cursor()
 
 # SQL実行
 query = """
-SELECT id, expense_description
+SELECT id, project_slug, expense_description
 FROM public.collective_transactions
 WHERE kind = 'EXPENSE'
 ORDER BY id ASC;
@@ -149,13 +149,15 @@ rows = cur.fetchall()
 
 results = []
 for i, row in enumerate(rows):
-    desc=row[1]
-    print(f"{i+1}/{len(rows)}: {row[0]}, {desc}")
+    project_slug = row[1]
+    desc = row[2]
+    print(f"{i+1}/{len(rows)}: {row[0]}, {project_slug}, {desc}")
     output = classify(desc)
     label, confidence, reason = parse_label(output)
 
     results.append({
         "index": i,
+        "project_slug": project_slug,
         "expense_description": desc,
         "predicted_label": label,
         "confidence": confidence,
