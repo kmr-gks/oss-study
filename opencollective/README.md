@@ -83,9 +83,15 @@ python random_sampling_2nd.py
 labeling_all_by_llm_2nd_devornot.py
 labeling_by_llm_2nd.py
 
+
+python .\rq1_random_1784sampling.py
+python .\rq1_labeling_1784samples.py
+
+ 
 #RQ2
 rq2_impact_of_joining_openc.py
 rq2_monthly_commit_activity.py
+
 ```
 
 ## ファイル構成
