@@ -20,9 +20,6 @@ client = OpenAI()
 # ===== CSV読み込み =====
 df = pd.read_csv("expenses_random_order_3rd.csv")
 
-# filter only first 10 rows for testing
-df = df.head(10)
-
 # ===== プロンプト =====
 def build_prompt(description):
     return f"""
