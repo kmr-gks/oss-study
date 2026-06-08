@@ -170,6 +170,13 @@ df_summary = (
     .reset_index()
 )
 
+# グラフ表示用の相対月
+# 内部的には -12〜11 のまま計算し、
+# 表示上だけ after 側を 0〜11 から 1〜12 に変換する
+df_summary["plot_month"] = df_summary["relative_month"].apply(
+    lambda x: x if x < 0 else x + 1
+)
+
 print("\n===== Monthly summary =====")
 print(df_summary)
 
@@ -233,31 +240,32 @@ df_summary.to_csv(
 plt.figure(figsize=(12, 6))
 
 plt.plot(
-    df_summary["relative_month"],
+    df_summary["plot_month"],
     df_summary["mean_commits"],
     marker="o",
     label="Mean commits"
 )
 
 plt.plot(
-    df_summary["relative_month"],
+    df_summary["plot_month"],
     df_summary["median_commits"],
     marker="o",
     label="Median commits"
 )
 
 # Open Collective 加入タイミング
-plt.axvline(x=-0.5, linestyle="--", linewidth=1)
+plt.axvline(x=0, linestyle="--", linewidth=1)
 plt.text(
-    -0.4,
+    0.1,
     plt.ylim()[1] * 0.95,
     "Open Collective registration",
     rotation=90,
     va="top"
 )
 
-plt.xticks(relative_months)
-plt.xlabel("Months relative to Open Collective registration")
+plot_months = list(range(-12, 0)) + list(range(1, 13))
+plt.xticks(plot_months)
+plt.xlabel("Months before / after Open Collective registration")
 plt.ylabel("Monthly commit count")
 plt.title("Monthly commit activity before and after Open Collective registration")
 plt.legend()
