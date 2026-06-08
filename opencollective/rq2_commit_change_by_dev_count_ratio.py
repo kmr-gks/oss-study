@@ -534,6 +534,10 @@ plot_data = [
     for label in labels
 ]
 
+# y軸範囲を全データの1〜99パーセンタイルに制限
+valid_growth_rates = df_analysis["growth_rate_pct"].dropna()
+y_min, y_max = valid_growth_rates.quantile(0.01), valid_growth_rates.quantile(0.99)
+
 plt.figure(figsize=(14, 7))
 
 plt.boxplot(
@@ -547,6 +551,8 @@ plt.axhline(
     linestyle="--",
     linewidth=1
 )
+
+plt.ylim(y_min, y_max)
 
 plt.xlabel("Share of expenses classified as development")
 plt.ylabel("Commit growth rate (%)")
@@ -574,6 +580,10 @@ amount_plot_data = [
     for label in labels
 ]
 
+# y軸範囲を全データの1〜99パーセンタイルに制限
+valid_growth_rates = df_analysis["growth_rate_pct"].dropna()
+y_min, y_max = valid_growth_rates.quantile(0.01), valid_growth_rates.quantile(0.99)
+
 plt.figure(figsize=(14, 7))
 
 plt.boxplot(
@@ -587,6 +597,8 @@ plt.axhline(
     linestyle="--",
     linewidth=1
 )
+
+plt.ylim(y_min, y_max)
 
 plt.xlabel("Share of expense amount classified as development")
 plt.ylabel("Commit growth rate (%)")
