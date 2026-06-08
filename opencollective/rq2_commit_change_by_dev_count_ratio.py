@@ -257,8 +257,7 @@ df_project_spending["development_amount_ratio"] = (
 )
 
 # 0-30%, 30-60%, 60-100% にビン分け
-bins = [0.0, 0.3, 0.6, 1.0]
-labels = ["0-30%", "30-60%", "60-100%"]
+bins, labels = [0.0, 0.3, 0.6, 1.0], ["0-30%", "30-60%", "60-100%"]
 
 df_project_spending["development_count_ratio_bin"] = pd.cut(
     df_project_spending["development_count_ratio"],
@@ -531,9 +530,9 @@ plot_data = [
     for label in labels
 ]
 
-# y軸範囲を全データの1〜99パーセンタイルに制限
+# y軸範囲を全データの1〜95パーセンタイルに制限
 valid_growth_rates = df_analysis["growth_rate_pct"].dropna()
-y_min, y_max = valid_growth_rates.quantile(0.01), valid_growth_rates.quantile(0.99)
+y_min, y_max = valid_growth_rates.quantile(0.01), valid_growth_rates.quantile(0.95)
 
 plt.figure(figsize=(14, 7))
 
@@ -577,9 +576,9 @@ amount_plot_data = [
     for label in labels
 ]
 
-# y軸範囲を全データの1〜99パーセンタイルに制限
+# y軸範囲を全データの1〜95パーセンタイルに制限
 valid_growth_rates = df_analysis["growth_rate_pct"].dropna()
-y_min, y_max = valid_growth_rates.quantile(0.01), valid_growth_rates.quantile(0.99)
+y_min, y_max = valid_growth_rates.quantile(0.01), valid_growth_rates.quantile(0.95)
 
 plt.figure(figsize=(14, 7))
 
