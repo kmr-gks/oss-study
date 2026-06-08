@@ -410,7 +410,12 @@ for idx, row in enumerate(df_analyzable.itertuples(index=False), start=1):
         (repo_commits < row.after_end)
     ).sum()
 
-    log_change = np.log1p(commits_after) - np.log1p(commits_before)
+    # コミット数の増加率（%）
+    # before が 0 の場合は増加率を定義できないため NaN にする
+    if commits_before == 0:
+        growth_rate_pct = np.nan
+    else:
+        growth_rate_pct = ((commits_after - commits_before) / commits_before) * 100
 
     commit_results.append({
         "id": row.id,
@@ -421,7 +426,7 @@ for idx, row in enumerate(df_analyzable.itertuples(index=False), start=1):
         "created_at": row.created_at,
         "commits_before_12m": commits_before,
         "commits_after_12m": commits_after,
-        "log_change": log_change,
+        "growth_rate_pct": growth_rate_pct,
     })
 
     if idx % 100 == 0 or idx == len(df_analyzable):
@@ -455,13 +460,13 @@ df_box_summary = (
     df_analysis
     .groupby("development_count_ratio_bin", observed=False)
     .agg(
-        n_projects=("log_change", "count"),
-        mean_log_change=("log_change", "mean"),
-        min_log_change=("log_change", "min"),
-        q1_log_change=("log_change", lambda x: x.quantile(0.25)),
-        median_log_change=("log_change", "median"),
-        q3_log_change=("log_change", lambda x: x.quantile(0.75)),
-        max_log_change=("log_change", "max"),
+        n_projects=("growth_rate_pct", "count"),
+        mean_growth_rate_pct=("growth_rate_pct", "mean"),
+        min_growth_rate_pct=("growth_rate_pct", "min"),
+        q1_growth_rate_pct=("growth_rate_pct", lambda x: x.quantile(0.25)),
+        median_growth_rate_pct=("growth_rate_pct", "median"),
+        q3_growth_rate_pct=("growth_rate_pct", lambda x: x.quantile(0.75)),
+        max_growth_rate_pct=("growth_rate_pct", "max"),
         mean_total_expense_count=("total_expense_count", "mean"),
         median_total_expense_count=("total_expense_count", "median"),
         mean_development_expense_count=("development_expense_count", "mean"),
@@ -470,16 +475,16 @@ df_box_summary = (
     .reset_index()
 )
 
-print("\n===== Log change summary by development count ratio bin =====")
+print("\n===== Growth rate (%) summary by development count ratio bin =====")
 print(df_box_summary.to_string(index=False))
 
 df_analysis.to_csv(
-    "rq2_development_count_ratio_and_commit_log_change_project_level.csv",
+    "rq2_development_count_ratio_and_commit_growth_rate_pct_project_level.csv",
     index=False
 )
 
 df_box_summary.to_csv(
-    "rq2_development_count_ratio_and_commit_log_change_boxplot_summary.csv",
+    "rq2_development_count_ratio_and_commit_growth_rate_pct_boxplot_summary.csv",
     index=False
 )
 
@@ -491,13 +496,13 @@ df_amount_box_summary = (
     df_analysis
     .groupby("development_amount_ratio_bin", observed=False)
     .agg(
-        n_projects=("log_change", "count"),
-        mean_log_change=("log_change", "mean"),
-        min_log_change=("log_change", "min"),
-        q1_log_change=("log_change", lambda x: x.quantile(0.25)),
-        median_log_change=("log_change", "median"),
-        q3_log_change=("log_change", lambda x: x.quantile(0.75)),
-        max_log_change=("log_change", "max"),
+        n_projects=("growth_rate_pct", "count"),
+        mean_growth_rate_pct=("growth_rate_pct", "mean"),
+        min_growth_rate_pct=("growth_rate_pct", "min"),
+        q1_growth_rate_pct=("growth_rate_pct", lambda x: x.quantile(0.25)),
+        median_growth_rate_pct=("growth_rate_pct", "median"),
+        q3_growth_rate_pct=("growth_rate_pct", lambda x: x.quantile(0.75)),
+        max_growth_rate_pct=("growth_rate_pct", "max"),
         mean_total_expense_amount_usd=("total_expense_amount_usd", "mean"),
         median_total_expense_amount_usd=("total_expense_amount_usd", "median"),
         mean_development_expense_amount_usd=("development_expense_amount_usd", "mean"),
@@ -508,11 +513,11 @@ df_amount_box_summary = (
     .reset_index()
 )
 
-print("\n===== Log change summary by development amount ratio bin =====")
+print("\n===== Growth rate (%) summary by development amount ratio bin =====")
 print(df_amount_box_summary.to_string(index=False))
 
 df_amount_box_summary.to_csv(
-    "rq2_development_amount_ratio_and_commit_log_change_boxplot_summary.csv",
+    "rq2_development_amount_ratio_and_commit_growth_rate_pct_boxplot_summary.csv",
     index=False
 )
 
@@ -524,7 +529,7 @@ df_amount_box_summary.to_csv(
 plot_data = [
     df_analysis.loc[
         df_analysis["development_count_ratio_bin"] == label,
-        "log_change"
+        "growth_rate_pct"
     ].dropna()
     for label in labels
 ]
@@ -544,14 +549,14 @@ plt.axhline(
 )
 
 plt.xlabel("Share of expenses classified as development")
-plt.ylabel("Commit log change: log1p(after 12m) - log1p(before 12m)")
-plt.title("Commit activity change by development expense count ratio")
+plt.ylabel("Commit growth rate (%)")
+plt.title("Commit growth rate by development expense count ratio")
 plt.xticks(rotation=45)
 plt.grid(axis="y", alpha=0.3)
 plt.tight_layout()
 
 plt.savefig(
-    "rq2_boxplot_commit_log_change_by_development_expense_count_ratio.png",
+    "rq2_boxplot_commit_growth_rate_pct_by_development_expense_count_ratio.png",
     dpi=300
 )
 
@@ -564,7 +569,7 @@ plt.show()
 amount_plot_data = [
     df_analysis.loc[
         df_analysis["development_amount_ratio_bin"] == label,
-        "log_change"
+        "growth_rate_pct"
     ].dropna()
     for label in labels
 ]
@@ -584,15 +589,22 @@ plt.axhline(
 )
 
 plt.xlabel("Share of expense amount classified as development")
-plt.ylabel("Commit log change: log1p(after 12m) - log1p(before 12m)")
-plt.title("Commit activity change by development expense amount ratio")
+plt.ylabel("Commit growth rate (%)")
+plt.title("Commit growth rate by development expense amount ratio")
 plt.xticks(rotation=45)
 plt.grid(axis="y", alpha=0.3)
 plt.tight_layout()
 
 plt.savefig(
-    "rq2_boxplot_commit_log_change_by_development_expense_amount_ratio.png",
+    "rq2_boxplot_commit_growth_rate_pct_by_development_expense_amount_ratio.png",
     dpi=300
 )
 
 plt.show()
+
+n_growth_rate_nan = df_analysis["growth_rate_pct"].isna().sum()
+
+print("\n===== Growth rate availability =====")
+print("Projects used in final analysis:", len(df_analysis))
+print("Projects with commits_before_12m = 0 excluded from growth rate stats:", n_growth_rate_nan)
+print("Projects with valid growth_rate_pct:", df_analysis["growth_rate_pct"].notna().sum())
