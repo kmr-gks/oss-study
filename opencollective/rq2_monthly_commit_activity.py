@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sqlalchemy import create_engine
+from scipy.stats import wilcoxon, ttest_rel
 
 engine = create_engine(
     f"postgresql+psycopg2://postgres:{api.load_sql_password_from_credentials()}@localhost:5432/opencollective"
@@ -218,6 +219,97 @@ df_12month_summary = df_12month_summary.sort_values("period")
 
 print("\n===== 12-month total commit counts: before vs after =====")
 print(df_12month_summary.to_string(index=False))
+
+
+# =========================
+# 8.6 加入前12ヶ月 vs 加入後12ヶ月の統計検定
+# =========================
+
+df_before_after = (
+    df_12month_project
+    .pivot(index=["id", "repo_name"], columns="period", values="total_commits_12m")
+    .reset_index()
+)
+
+df_before_after = df_before_after.dropna(subset=["before", "after"]).copy()
+
+df_before_after["diff"] = df_before_after["after"] - df_before_after["before"]
+df_before_after["growth_rate"] = np.where(
+    df_before_after["before"] == 0,
+    np.nan,
+    (df_before_after["after"] - df_before_after["before"]) / df_before_after["before"]
+)
+df_before_after["log_change"] = (
+    np.log1p(df_before_after["after"]) -
+    np.log1p(df_before_after["before"])
+)
+
+print("\n===== Statistical test: before 12m vs after 12m =====")
+print("N projects:", len(df_before_after))
+
+print("\n--- Descriptive statistics ---")
+print("Mean commits before:", df_before_after["before"].mean())
+print("Median commits before:", df_before_after["before"].median())
+print("Mean commits after:", df_before_after["after"].mean())
+print("Median commits after:", df_before_after["after"].median())
+print("Mean diff:", df_before_after["diff"].mean())
+print("Median diff:", df_before_after["diff"].median())
+print("Mean log_change:", df_before_after["log_change"].mean())
+print("Median log_change:", df_before_after["log_change"].median())
+
+# Wilcoxon signed-rank test
+# コミット数分布は外れ値が大きいため、主検定としてはこちらを推奨
+if (df_before_after["diff"] != 0).any():
+    wilcoxon_result = wilcoxon(
+        df_before_after["after"],
+        df_before_after["before"],
+        alternative="two-sided"
+    )
+
+    wilcoxon_result_greater = wilcoxon(
+        df_before_after["after"],
+        df_before_after["before"],
+        alternative="greater"
+    )
+
+    wilcoxon_result_less = wilcoxon(
+        df_before_after["after"],
+        df_before_after["before"],
+        alternative="less"
+    )
+
+    print("\n--- Wilcoxon signed-rank test ---")
+    print("Two-sided statistic:", wilcoxon_result.statistic)
+    print("Two-sided p-value:", wilcoxon_result.pvalue)
+    print("Greater p-value, after > before:", wilcoxon_result_greater.pvalue)
+    print("Less p-value, after < before:", wilcoxon_result_less.pvalue)
+
+# Paired t-test
+# 平均差の検定。ただし外れ値の影響を強く受けるため補助的に使う
+ttest_result = ttest_rel(
+    df_before_after["after"],
+    df_before_after["before"]
+)
+
+print("\n--- Paired t-test ---")
+print("t statistic:", ttest_result.statistic)
+print("p-value:", ttest_result.pvalue)
+
+# 増加・減少プロジェクト数
+increased = (df_before_after["after"] > df_before_after["before"]).sum()
+decreased = (df_before_after["after"] < df_before_after["before"]).sum()
+unchanged = (df_before_after["after"] == df_before_after["before"]).sum()
+
+print("\n--- Direction of change ---")
+print("Increased:", increased, f"({increased / len(df_before_after):.2%})")
+print("Decreased:", decreased, f"({decreased / len(df_before_after):.2%})")
+print("Unchanged:", unchanged, f"({unchanged / len(df_before_after):.2%})")
+
+df_before_after.to_csv(
+    "rq2_commit_before_after_12m_statistical_test_project_level.csv",
+    index=False
+)
+
 
 # =========================
 # 9. CSV保存
