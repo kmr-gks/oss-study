@@ -256,12 +256,9 @@ df_project_spending["development_amount_ratio"] = (
     df_project_spending["total_expense_amount_usd"]
 )
 
-# 0-10%, 10-20%, ..., 90-100% にビン分け
-bins = np.arange(0, 1.0 + 0.1, 0.1)
-labels = [
-    f"{int(bins[i] * 100)}-{int(bins[i + 1] * 100)}%"
-    for i in range(len(bins) - 1)
-]
+# 0-30%, 30-60%, 60-100% にビン分け
+bins = [0.0, 0.3, 0.6, 1.0]
+labels = ["0-30%", "30-60%", "60-100%"]
 
 df_project_spending["development_count_ratio_bin"] = pd.cut(
     df_project_spending["development_count_ratio"],
@@ -542,7 +539,7 @@ plt.figure(figsize=(14, 7))
 
 plt.boxplot(
     plot_data,
-    labels=labels,
+    tick_labels=labels,
     showmeans=True
 )
 
@@ -588,7 +585,7 @@ plt.figure(figsize=(14, 7))
 
 plt.boxplot(
     amount_plot_data,
-    labels=labels,
+    tick_labels=labels,
     showmeans=True
 )
 
