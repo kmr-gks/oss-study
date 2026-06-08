@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sqlalchemy import create_engine
 from forex_python.converter import CurrencyRates
+from scipy.stats import mannwhitneyu
 
 # ============================================================
 # 設定
@@ -449,6 +450,155 @@ print("\n===== Merged analysis data =====")
 print("Projects used in final analysis:", len(df_analysis))
 
 # ============================================================
+# 4.5 0-30% vs 30-60% の統計検定
+#     Mann-Whitney U test + Cliff's delta
+# ============================================================
+
+
+def cliffs_delta(x, y):
+    """
+    Cliff's delta を計算する。
+    x > y の割合 - x < y の割合。
+    
+    delta > 0:
+        x 群の値が y 群より大きい傾向
+    delta < 0:
+        x 群の値が y 群より小さい傾向
+    """
+    x = np.asarray(x)
+    y = np.asarray(y)
+
+    n_x = len(x)
+    n_y = len(y)
+
+    greater = 0
+    less = 0
+
+    for x_i in x:
+        greater += np.sum(x_i > y)
+        less += np.sum(x_i < y)
+
+    return (greater - less) / (n_x * n_y)
+
+
+def test_growth_rate_between_bins(df, bin_col, value_col="growth_rate_pct"):
+    """
+    0-30% と 30-60% の growth_rate_pct を比較する。
+    """
+
+    group_low = (
+        df.loc[df[bin_col] == "0-30%", value_col]
+        .dropna()
+    )
+
+    group_mid = (
+        df.loc[df[bin_col] == "30-60%", value_col]
+        .dropna()
+    )
+
+    print(f"\n===== Mann-Whitney U test: {bin_col} =====")
+
+    print("0-30%:")
+    print(f"  n      = {len(group_low)}")
+    print(f"  median = {group_low.median():.3f}")
+    print(f"  mean   = {group_low.mean():.3f}")
+    print(f"  q1     = {group_low.quantile(0.25):.3f}")
+    print(f"  q3     = {group_low.quantile(0.75):.3f}")
+
+    print("30-60%:")
+    print(f"  n      = {len(group_mid)}")
+    print(f"  median = {group_mid.median():.3f}")
+    print(f"  mean   = {group_mid.mean():.3f}")
+    print(f"  q1     = {group_mid.quantile(0.25):.3f}")
+    print(f"  q3     = {group_mid.quantile(0.75):.3f}")
+
+    # 30-60% の方が 0-30% より大きいかを片側検定
+    # 仮説: 30-60% group has larger growth_rate_pct than 0-30% group
+    u_result_greater = mannwhitneyu(
+        group_mid,
+        group_low,
+        alternative="greater"
+    )
+
+    # 念のため両側検定も出す
+    u_result_two_sided = mannwhitneyu(
+        group_mid,
+        group_low,
+        alternative="two-sided"
+    )
+
+    delta = cliffs_delta(group_mid, group_low)
+
+    print("\nMann-Whitney U test")
+    print(f"  U statistic, greater = {u_result_greater.statistic:.3f}")
+    print(f"  p-value, greater     = {u_result_greater.pvalue:.6f}")
+    print(f"  U statistic, two-sided = {u_result_two_sided.statistic:.3f}")
+    print(f"  p-value, two-sided     = {u_result_two_sided.pvalue:.6f}")
+
+    print("\nEffect size")
+    print(f"  Cliff's delta = {delta:.3f}")
+
+    if abs(delta) < 0.147:
+        effect_size_label = "negligible"
+    elif abs(delta) < 0.33:
+        effect_size_label = "small"
+    elif abs(delta) < 0.474:
+        effect_size_label = "medium"
+    else:
+        effect_size_label = "large"
+
+    print(f"  Effect size label = {effect_size_label}")
+
+    return {
+        "bin_col": bin_col,
+        "n_0_30": len(group_low),
+        "n_30_60": len(group_mid),
+        "median_0_30": group_low.median(),
+        "median_30_60": group_mid.median(),
+        "mean_0_30": group_low.mean(),
+        "mean_30_60": group_mid.mean(),
+        "q1_0_30": group_low.quantile(0.25),
+        "q3_0_30": group_low.quantile(0.75),
+        "q1_30_60": group_mid.quantile(0.25),
+        "q3_30_60": group_mid.quantile(0.75),
+        "mannwhitney_u_greater": u_result_greater.statistic,
+        "mannwhitney_p_greater": u_result_greater.pvalue,
+        "mannwhitney_u_two_sided": u_result_two_sided.statistic,
+        "mannwhitney_p_two_sided": u_result_two_sided.pvalue,
+        "cliffs_delta": delta,
+        "effect_size_label": effect_size_label,
+    }
+
+
+test_results = []
+
+# 支出回数割合: 0-30% vs 30-60%
+test_results.append(
+    test_growth_rate_between_bins(
+        df_analysis,
+        bin_col="development_count_ratio_bin"
+    )
+)
+
+# 支出額割合: 0-30% vs 30-60%
+test_results.append(
+    test_growth_rate_between_bins(
+        df_analysis,
+        bin_col="development_amount_ratio_bin"
+    )
+)
+
+df_test_results = pd.DataFrame(test_results)
+
+print("\n===== Summary of statistical tests =====")
+print(df_test_results.to_string(index=False))
+
+df_test_results.to_csv(
+    "rq2_growth_rate_mannwhitney_0_30_vs_30_60.csv",
+    index=False
+)
+
+# ============================================================
 # 5. ビンごとの記述統計を表示
 # ============================================================
 
@@ -616,3 +766,22 @@ print("\n===== Growth rate availability =====")
 print("Projects used in final analysis:", len(df_analysis))
 print("Projects with commits_before_12m = 0 excluded from growth rate stats:", n_growth_rate_nan)
 print("Projects with valid growth_rate_pct:", df_analysis["growth_rate_pct"].notna().sum())
+
+group_low = df_analysis.loc[
+    df_analysis["development_count_ratio_bin"] == "0-30%",
+    "growth_rate_pct"
+].dropna()
+
+group_mid = df_analysis.loc[
+    df_analysis["development_count_ratio_bin"] == "30-60%",
+    "growth_rate_pct"
+].dropna()
+
+result = mannwhitneyu(
+    group_mid,
+    group_low,
+    alternative="greater"
+)
+
+print(result.statistic)
+print(result.pvalue)
