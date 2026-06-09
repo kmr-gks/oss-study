@@ -222,91 +222,196 @@ print(df_12month_summary.to_string(index=False))
 
 
 # =========================
-# 8.6 加入前12ヶ月 vs 加入後12ヶ月の統計検定
+# 8.6 加入前12ヶ月平均 vs 加入後1/3/6/12ヶ月平均の統計検定
 # =========================
 
-df_before_after = (
-    df_12month_project
-    .pivot(index=["id", "repo_name"], columns="period", values="total_commits_12m")
+from scipy.stats import wilcoxon, ttest_rel
+
+# 各プロジェクト × relative_month の形を横持ちにする
+df_monthly_wide = (
+    df_monthly
+    .pivot_table(
+        index=["id", "repo_name"],
+        columns="relative_month",
+        values="commit_count",
+        aggfunc="sum"
+    )
     .reset_index()
 )
 
-df_before_after = df_before_after.dropna(subset=["before", "after"]).copy()
+# 加入前12ヶ月: relative_month -12 〜 -1
+before_months = list(range(-12, 0))
 
-df_before_after["diff"] = df_before_after["after"] - df_before_after["before"]
-df_before_after["growth_rate"] = np.where(
-    df_before_after["before"] == 0,
-    np.nan,
-    (df_before_after["after"] - df_before_after["before"]) / df_before_after["before"]
-)
-df_before_after["log_change"] = (
-    np.log1p(df_before_after["after"]) -
-    np.log1p(df_before_after["before"])
-)
+# 加入後の比較窓
+# after 1m  : relative_month 0
+# after 3m  : relative_month 0, 1, 2
+# after 6m  : relative_month 0〜5
+# after 12m : relative_month 0〜11
+after_windows = {
+    1: list(range(0, 1)),
+    3: list(range(0, 3)),
+    6: list(range(0, 6)),
+    12: list(range(0, 12)),
+}
 
-print("\n===== Statistical test: before 12m vs after 12m =====")
-print("N projects:", len(df_before_after))
-
-print("\n--- Descriptive statistics ---")
-print("Mean commits before:", df_before_after["before"].mean())
-print("Median commits before:", df_before_after["before"].median())
-print("Mean commits after:", df_before_after["after"].mean())
-print("Median commits after:", df_before_after["after"].median())
-print("Mean diff:", df_before_after["diff"].mean())
-print("Median diff:", df_before_after["diff"].median())
-print("Mean log_change:", df_before_after["log_change"].mean())
-print("Median log_change:", df_before_after["log_change"].median())
-
-# Wilcoxon signed-rank test
-# コミット数分布は外れ値が大きいため、主検定としてはこちらを推奨
-if (df_before_after["diff"] != 0).any():
-    wilcoxon_result = wilcoxon(
-        df_before_after["after"],
-        df_before_after["before"],
-        alternative="two-sided"
-    )
-
-    wilcoxon_result_greater = wilcoxon(
-        df_before_after["after"],
-        df_before_after["before"],
-        alternative="greater"
-    )
-
-    wilcoxon_result_less = wilcoxon(
-        df_before_after["after"],
-        df_before_after["before"],
-        alternative="less"
-    )
-
-    print("\n--- Wilcoxon signed-rank test ---")
-    print("Two-sided statistic:", wilcoxon_result.statistic)
-    print("Two-sided p-value:", wilcoxon_result.pvalue)
-    print("Greater p-value, after > before:", wilcoxon_result_greater.pvalue)
-    print("Less p-value, after < before:", wilcoxon_result_less.pvalue)
-
-# Paired t-test
-# 平均差の検定。ただし外れ値の影響を強く受けるため補助的に使う
-ttest_result = ttest_rel(
-    df_before_after["after"],
-    df_before_after["before"]
+# 加入前12ヶ月の月平均
+df_monthly_wide["before_12m_total"] = df_monthly_wide[before_months].sum(axis=1)
+df_monthly_wide["before_12m_monthly_avg"] = (
+    df_monthly_wide["before_12m_total"] / 12
 )
 
-print("\n--- Paired t-test ---")
-print("t statistic:", ttest_result.statistic)
-print("p-value:", ttest_result.pvalue)
+test_results = []
 
-# 増加・減少プロジェクト数
-increased = (df_before_after["after"] > df_before_after["before"]).sum()
-decreased = (df_before_after["after"] < df_before_after["before"]).sum()
-unchanged = (df_before_after["after"] == df_before_after["before"]).sum()
+for after_months, months in after_windows.items():
+    after_total_col = f"after_{after_months}m_total"
+    after_avg_col = f"after_{after_months}m_monthly_avg"
+    diff_col = f"diff_after_{after_months}m_avg_minus_before_12m_avg"
+    log_change_col = f"log_change_after_{after_months}m_avg_vs_before_12m_avg"
 
-print("\n--- Direction of change ---")
-print("Increased:", increased, f"({increased / len(df_before_after):.2%})")
-print("Decreased:", decreased, f"({decreased / len(df_before_after):.2%})")
-print("Unchanged:", unchanged, f"({unchanged / len(df_before_after):.2%})")
+    # 加入後Nヶ月の合計・月平均
+    df_monthly_wide[after_total_col] = df_monthly_wide[months].sum(axis=1)
+    df_monthly_wide[after_avg_col] = (
+        df_monthly_wide[after_total_col] / after_months
+    )
 
-df_before_after.to_csv(
-    "rq2_commit_before_after_12m_statistical_test_project_level.csv",
+    # 差分
+    df_monthly_wide[diff_col] = (
+        df_monthly_wide[after_avg_col] -
+        df_monthly_wide["before_12m_monthly_avg"]
+    )
+
+    # log change
+    df_monthly_wide[log_change_col] = (
+        np.log1p(df_monthly_wide[after_avg_col]) -
+        np.log1p(df_monthly_wide["before_12m_monthly_avg"])
+    )
+
+    df_test = df_monthly_wide[
+        [
+            "id",
+            "repo_name",
+            "before_12m_total",
+            "before_12m_monthly_avg",
+            after_total_col,
+            after_avg_col,
+            diff_col,
+            log_change_col,
+        ]
+    ].dropna().copy()
+
+    print(f"\n===== Statistical test: before 12m monthly avg vs after {after_months}m monthly avg =====")
+    print("N projects:", len(df_test))
+
+    print("\n--- Descriptive statistics ---")
+    print("Mean before 12m monthly avg:", df_test["before_12m_monthly_avg"].mean())
+    print("Median before 12m monthly avg:", df_test["before_12m_monthly_avg"].median())
+    print(f"Mean after {after_months}m monthly avg:", df_test[after_avg_col].mean())
+    print(f"Median after {after_months}m monthly avg:", df_test[after_avg_col].median())
+    print("Mean diff:", df_test[diff_col].mean())
+    print("Median diff:", df_test[diff_col].median())
+    print("Mean log_change:", df_test[log_change_col].mean())
+    print("Median log_change:", df_test[log_change_col].median())
+
+    # Wilcoxon signed-rank test
+    # 主検定: after の月平均が before 12m 月平均より高いか
+    if (df_test[diff_col] != 0).any():
+        wilcoxon_two_sided = wilcoxon(
+            df_test[after_avg_col],
+            df_test["before_12m_monthly_avg"],
+            alternative="two-sided"
+        )
+
+        wilcoxon_greater = wilcoxon(
+            df_test[after_avg_col],
+            df_test["before_12m_monthly_avg"],
+            alternative="greater"
+        )
+
+        wilcoxon_less = wilcoxon(
+            df_test[after_avg_col],
+            df_test["before_12m_monthly_avg"],
+            alternative="less"
+        )
+
+        print("\n--- Wilcoxon signed-rank test ---")
+        print("Two-sided statistic:", wilcoxon_two_sided.statistic)
+        print("Two-sided p-value:", wilcoxon_two_sided.pvalue)
+        print(f"Greater p-value, after {after_months}m avg > before 12m avg:", wilcoxon_greater.pvalue)
+        print(f"Less p-value, after {after_months}m avg < before 12m avg:", wilcoxon_less.pvalue)
+    else:
+        wilcoxon_two_sided = None
+        wilcoxon_greater = None
+        wilcoxon_less = None
+
+        print("\n--- Wilcoxon signed-rank test ---")
+        print("Skipped because all differences are zero.")
+
+    # Paired t-test
+    # 平均差の検定。外れ値の影響が大きいため補助的に使う
+    ttest_result = ttest_rel(
+        df_test[after_avg_col],
+        df_test["before_12m_monthly_avg"]
+    )
+
+    print("\n--- Paired t-test ---")
+    print("t statistic:", ttest_result.statistic)
+    print("p-value:", ttest_result.pvalue)
+
+    # 増加・減少プロジェクト数
+    increased = (df_test[after_avg_col] > df_test["before_12m_monthly_avg"]).sum()
+    decreased = (df_test[after_avg_col] < df_test["before_12m_monthly_avg"]).sum()
+    unchanged = (df_test[after_avg_col] == df_test["before_12m_monthly_avg"]).sum()
+
+    print("\n--- Direction of change ---")
+    print("Increased:", increased, f"({increased / len(df_test):.2%})")
+    print("Decreased:", decreased, f"({decreased / len(df_test):.2%})")
+    print("Unchanged:", unchanged, f"({unchanged / len(df_test):.2%})")
+
+    test_results.append({
+        "after_months": after_months,
+        "n_projects": len(df_test),
+        "mean_before_12m_monthly_avg": df_test["before_12m_monthly_avg"].mean(),
+        "median_before_12m_monthly_avg": df_test["before_12m_monthly_avg"].median(),
+        "mean_after_monthly_avg": df_test[after_avg_col].mean(),
+        "median_after_monthly_avg": df_test[after_avg_col].median(),
+        "mean_diff": df_test[diff_col].mean(),
+        "median_diff": df_test[diff_col].median(),
+        "mean_log_change": df_test[log_change_col].mean(),
+        "median_log_change": df_test[log_change_col].median(),
+        "wilcoxon_statistic_two_sided": (
+            wilcoxon_two_sided.statistic if wilcoxon_two_sided is not None else np.nan
+        ),
+        "wilcoxon_p_two_sided": (
+            wilcoxon_two_sided.pvalue if wilcoxon_two_sided is not None else np.nan
+        ),
+        "wilcoxon_p_greater": (
+            wilcoxon_greater.pvalue if wilcoxon_greater is not None else np.nan
+        ),
+        "wilcoxon_p_less": (
+            wilcoxon_less.pvalue if wilcoxon_less is not None else np.nan
+        ),
+        "paired_t_statistic": ttest_result.statistic,
+        "paired_t_p_value": ttest_result.pvalue,
+        "increased_count": increased,
+        "decreased_count": decreased,
+        "unchanged_count": unchanged,
+        "increase_rate": increased / len(df_test),
+        "decrease_rate": decreased / len(df_test),
+        "unchanged_rate": unchanged / len(df_test),
+    })
+
+df_short_term_tests = pd.DataFrame(test_results)
+
+print("\n===== Summary: before 12m monthly avg vs after short-term monthly avg =====")
+print(df_short_term_tests.to_string(index=False))
+
+df_short_term_tests.to_csv(
+    "rq2_commit_before12m_avg_vs_after_1_3_6_12m_avg_statistical_tests.csv",
+    index=False
+)
+
+df_monthly_wide.to_csv(
+    "rq2_commit_before12m_avg_vs_after_1_3_6_12m_avg_project_level.csv",
     index=False
 )
 
