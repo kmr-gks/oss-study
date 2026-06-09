@@ -32,14 +32,6 @@ OPEN_SOURCE_TO_ACCOUNT_TYPES = [
 # 支出・送金額が負値で入っている場合もあるため、金額は絶対値で扱う
 USE_ABSOLUTE_AMOUNT = True
 
-# 出力ファイル名
-FLOW_TABLE_CSV = "pq1_money_flow_from_account_type_to_account_type_usd.csv"
-YEARLY_CONTRIBUTION_CSV = "pq1_yearly_money_contributed_to_open_source_usd.csv"
-
-FLOW_HEATMAP_PNG = "pq1_money_flow_from_account_type_to_account_type_usd_heatmap.png"
-YEARLY_CONTRIBUTION_PNG = "pq1_yearly_money_contributed_to_open_source_usd.png"
-
-
 # ============================================================
 # 1. DB接続
 # ============================================================
@@ -59,13 +51,15 @@ SELECT
     {AMOUNT_COL} AS amount_value,
     {CURRENCY_COL} AS amount_currency,
     {FROM_TYPE_COL} AS from_account_type,
-    {TO_TYPE_COL} AS to_account_type
+    {TO_TYPE_COL} AS to_account_type,
+    kind
 FROM {MONEY_TABLE}
 WHERE {AMOUNT_COL} IS NOT NULL
   AND {CURRENCY_COL} IS NOT NULL
   AND {DATE_COL} IS NOT NULL
   AND {FROM_TYPE_COL} IS NOT NULL
   AND {TO_TYPE_COL} IS NOT NULL
+  AND kind IS NOT NULL
 """
 
 df_money = pd.read_sql(query_money, engine)
@@ -106,6 +100,13 @@ df_money["from_account_type"] = (
 
 df_money["to_account_type"] = (
     df_money["to_account_type"]
+    .astype(str)
+    .str.strip()
+    .str.upper()
+)
+
+df_money["kind"] = (
+    df_money["kind"]
     .astype(str)
     .str.strip()
     .str.upper()
@@ -189,11 +190,12 @@ print("Total amount USD:", df_money["amount_usd"].sum())
 # ============================================================
 # 5. Graph 1:
 #    Money amount table: From account type --> To account type
+#    kind 別に CONTRIBUTION / EXPENSE を分けて集計
 # ============================================================
 
 df_flow = (
     df_money
-    .groupby(["from_account_type", "to_account_type"])
+    .groupby(["kind", "from_account_type", "to_account_type"])
     .agg(
         total_amount_usd=("amount_usd", "sum"),
         n_transactions=("amount_usd", "count"),
@@ -201,72 +203,81 @@ df_flow = (
     .reset_index()
 )
 
-df_flow_table = df_flow.pivot_table(
-    index="from_account_type",
-    columns="to_account_type",
-    values="total_amount_usd",
-    aggfunc="sum",
-    fill_value=0
+df_flow.to_csv(
+    "pq1_money_flow_from_account_type_to_account_type_by_kind_usd_long.csv",
+    index=False
 )
 
-df_flow_table.to_csv(FLOW_TABLE_CSV)
+print("\n===== Money flow table by kind: from_account_type -> to_account_type =====")
+print(df_flow.to_string(index=False))
 
-print("\n===== Money flow table: from_account_type -> to_account_type =====")
-print(df_flow_table)
+for kind_value in ["CONTRIBUTION", "EXPENSE"]:
+    df_kind = df_money[df_money["kind"] == kind_value].copy()
 
-# ヒートマップ用に大きすぎる値の偏りを抑えるため log1p を使用
-flow_values_log = np.log1p(df_flow_table.values)
+    if df_kind.empty:
+        print(f"\nNo records for kind = {kind_value}")
+        continue
 
-plt.figure(figsize=(12, 8))
+    df_flow_table = df_kind.pivot_table(
+        index="from_account_type",
+        columns="to_account_type",
+        values="amount_usd",
+        aggfunc="sum",
+        fill_value=0
+    )
 
-im = plt.imshow(flow_values_log, aspect="auto")
+    output_csv = f"pq1_money_flow_{kind_value.lower()}_from_account_type_to_account_type_usd.csv"
+    output_png = f"pq1_money_flow_{kind_value.lower()}_from_account_type_to_account_type_usd_heatmap.png"
 
-plt.xticks(
-    ticks=np.arange(len(df_flow_table.columns)),
-    labels=df_flow_table.columns,
-    rotation=45,
-    ha="right"
-)
+    df_flow_table.to_csv(output_csv)
 
-plt.yticks(
-    ticks=np.arange(len(df_flow_table.index)),
-    labels=df_flow_table.index
-)
+    print(f"\n===== Money flow table: kind = {kind_value} =====")
+    print(df_flow_table)
 
-plt.colorbar(im, label="log1p(total amount in USD)")
+    flow_values_log = np.log1p(df_flow_table.values)
 
-plt.xlabel("To account type")
-plt.ylabel("From account type")
-plt.title("Money flow by account type, converted to USD")
+    plt.figure(figsize=(12, 8))
 
-plt.tight_layout()
+    im = plt.imshow(flow_values_log, aspect="auto")
 
-plt.savefig(
-    FLOW_HEATMAP_PNG,
-    dpi=300
-)
+    plt.xticks(
+        ticks=np.arange(len(df_flow_table.columns)),
+        labels=df_flow_table.columns,
+        rotation=45,
+        ha="right"
+    )
 
-plt.show()
+    plt.yticks(
+        ticks=np.arange(len(df_flow_table.index)),
+        labels=df_flow_table.index
+    )
 
-print(f"Saved: {FLOW_HEATMAP_PNG}")
-print(f"Saved: {FLOW_TABLE_CSV}")
+    plt.colorbar(im, label="log1p(total amount in USD)")
+
+    plt.xlabel("To account type")
+    plt.ylabel("From account type")
+    plt.title(f"Money flow by account type, kind = {kind_value}, converted to USD")
+
+    plt.tight_layout()
+    plt.savefig(output_png, dpi=300)
+    plt.show()
+
+    print(f"Saved: {output_csv}")
+    print(f"Saved: {output_png}")
 
 
 # ============================================================
 # 6. Graph 2:
 #    Yearly graph of amount of money being contributed to Open-source
+#    kind = CONTRIBUTION のみ
 # ============================================================
 
-open_source_to_account_types = [
-    x.upper() for x in OPEN_SOURCE_TO_ACCOUNT_TYPES
-]
-
-df_open_source_contrib = df_money[
-    df_money["to_account_type"].isin(open_source_to_account_types)
+df_contribution = df_money[
+    df_money["kind"] == "CONTRIBUTION"
 ].copy()
 
 df_yearly = (
-    df_open_source_contrib
+    df_contribution
     .groupby("year")
     .agg(
         total_contributed_usd=("amount_usd", "sum"),
@@ -276,7 +287,10 @@ df_yearly = (
     .sort_values("year")
 )
 
-df_yearly.to_csv(YEARLY_CONTRIBUTION_CSV, index=False)
+df_yearly.to_csv(
+    "pq1_yearly_money_contributed_to_open_source_usd.csv",
+    index=False
+)
 
 print("\n===== Yearly amount contributed to open-source =====")
 print(df_yearly.to_string(index=False))
@@ -287,33 +301,19 @@ plt.plot(
     df_yearly["year"],
     df_yearly["total_contributed_usd"],
     marker="o",
-    label="Total contributed amount"
+    label="Total contribution amount"
 )
 
 plt.xlabel("Year")
 plt.ylabel("Amount contributed to open-source projects (USD)")
-plt.title("Yearly amount of money contributed to open-source")
+plt.title("Yearly amount of money contributed to open-source projects")
 plt.grid(True, alpha=0.3)
 plt.legend()
 plt.tight_layout()
 
 plt.savefig(
-    YEARLY_CONTRIBUTION_PNG,
+    "pq1_yearly_money_contributed_to_open_source_usd.png",
     dpi=300
 )
 
 plt.show()
-
-print(f"Saved: {YEARLY_CONTRIBUTION_PNG}")
-print(f"Saved: {YEARLY_CONTRIBUTION_CSV}")
-
-
-# ============================================================
-# 7. 補助出力
-# ============================================================
-
-print("\n===== Output files =====")
-print(FLOW_TABLE_CSV)
-print(FLOW_HEATMAP_PNG)
-print(YEARLY_CONTRIBUTION_CSV)
-print(YEARLY_CONTRIBUTION_PNG)
