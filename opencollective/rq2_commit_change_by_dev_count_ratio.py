@@ -15,8 +15,8 @@ WINDOW_MONTHS_LIST = [6, 12]
 BASE_CURRENCY = "USD"
 
 CSV_FILES = [f"predictions_2nd_all_devornot_{i}.csv" for i in range(1, 6)]
-RATIO_BINS = [0.0, 0.3, 0.6, 1.0]
-RATIO_LABELS = ["0-30%", "30-60%", "60-100%"]
+SPEND_TERTILE_COL = "development_spend_amount_tertile"
+SPEND_TERTILE_LABELS = ["Bottom 33%", "Middle 33%", "Top 33%"]
 
 REQUIRED_EXPENSE_COLS = {
     "index",
@@ -33,28 +33,9 @@ PROJECT_SUMMARY_COLS = [
     "total_expense_count",
     "development_expense_count",
     "development_count_ratio",
-    "development_count_ratio_bin",
     "total_expense_amount_usd",
     "development_expense_amount_usd",
     "development_amount_ratio",
-    "development_amount_ratio_bin",
-]
-
-RATIO_ANALYSES = [
-    (
-        "development_count_ratio_bin",
-        "count",
-        "development_expense_count_ratio",
-        "Share of expenses classified as development",
-        "development expense count ratio",
-    ),
-    (
-        "development_amount_ratio_bin",
-        "amount",
-        "development_expense_amount_ratio",
-        "Share of expense amount classified as development",
-        "development expense amount ratio",
-    ),
 ]
 
 STAT_FUNCS = [
@@ -254,23 +235,9 @@ def build_project_spending(df_expense):
         / df_project_spending["total_expense_amount_usd"]
     )
 
-    for ratio_col in ["development_count_ratio", "development_amount_ratio"]:
-        df_project_spending[f"{ratio_col}_bin"] = pd.cut(
-            df_project_spending[ratio_col],
-            bins=RATIO_BINS,
-            labels=RATIO_LABELS,
-            include_lowest=True,
-            right=True,
-        )
-
-    print("\n===== Project development ratio summary =====")
+    print("\n===== Project development spending summary =====")
     print("Projects with expense data:", len(df_project_spending))
     print(df_project_spending[PROJECT_SUMMARY_COLS].head())
-
-    for kind in ["count", "amount"]:
-        col = f"development_{kind}_ratio_bin"
-        print(f"\n===== Number of projects by development {kind} ratio bin =====")
-        print(df_project_spending[col].value_counts().sort_index())
 
     return df_project_spending
 
@@ -338,33 +305,32 @@ def print_group_stats(label, group):
         print(f"  {name:<6} = {func(group):.3f}")
 
 
-def stats_for_result(group_low, group_mid, include_stats=True):
-    result = {"n_0_30": len(group_low), "n_30_60": len(group_mid)}
+def stats_for_result(group_low, group_high, include_stats=True):
+    result = {"n_bottom_33": len(group_low), "n_top_33": len(group_high)}
     for name, func in STAT_FUNCS:
-        result[f"{name}_0_30"] = func(group_low) if include_stats else np.nan
-        result[f"{name}_30_60"] = func(group_mid) if include_stats else np.nan
+        result[f"{name}_bottom_33"] = func(group_low) if include_stats else np.nan
+        result[f"{name}_top_33"] = func(group_high) if include_stats else np.nan
     return result
 
 
-def test_growth_rate_between_bins(
+def test_growth_rate_between_spend_tertiles(
     df,
-    bin_col,
     value_col="growth_rate_pct",
     window_months=None,
 ):
-    group_low = df.loc[df[bin_col] == "0-30%", value_col].dropna()
-    group_mid = df.loc[df[bin_col] == "30-60%", value_col].dropna()
+    group_low = df.loc[df[SPEND_TERTILE_COL] == SPEND_TERTILE_LABELS[0], value_col]
+    group_high = df.loc[df[SPEND_TERTILE_COL] == SPEND_TERTILE_LABELS[-1], value_col]
 
     title_suffix = f" ({window_months}m)" if window_months is not None else ""
-    print(f"\n===== Mann-Whitney U test: {bin_col}{title_suffix} =====")
-    print_group_stats("0-30%", group_low)
-    print_group_stats("30-60%", group_mid)
+    print(f"\n===== Mann-Whitney U test: {SPEND_TERTILE_COL}{title_suffix} =====")
+    print_group_stats(SPEND_TERTILE_LABELS[0], group_low)
+    print_group_stats(SPEND_TERTILE_LABELS[-1], group_high)
 
-    has_both_groups = len(group_low) > 0 and len(group_mid) > 0
+    has_both_groups = len(group_low) > 0 and len(group_high) > 0
     result = {
         "window_months": window_months,
-        "bin_col": bin_col,
-        **stats_for_result(group_low, group_mid, include_stats=has_both_groups),
+        "bin_col": SPEND_TERTILE_COL,
+        **stats_for_result(group_low, group_high, include_stats=has_both_groups),
     }
 
     if not has_both_groups:
@@ -381,9 +347,9 @@ def test_growth_rate_between_bins(
         )
         return result
 
-    u_result_greater = mannwhitneyu(group_mid, group_low, alternative="greater")
-    u_result_two_sided = mannwhitneyu(group_mid, group_low, alternative="two-sided")
-    delta = cliffs_delta(group_mid, group_low)
+    u_result_greater = mannwhitneyu(group_high, group_low, alternative="greater")
+    u_result_two_sided = mannwhitneyu(group_high, group_low, alternative="two-sided")
+    delta = cliffs_delta(group_high, group_low)
     label = effect_size_label(delta)
 
     print("\nMann-Whitney U test")
@@ -441,7 +407,7 @@ def summarize_by_bin(df, bin_col):
 def save_boxplot(df, bin_col, filename, xlabel, title):
     plot_data = [
         df.loc[df[bin_col] == label, "growth_rate_pct"].dropna()
-        for label in RATIO_LABELS
+        for label in SPEND_TERTILE_LABELS
     ]
     valid_growth_rates = df["growth_rate_pct"].dropna()
     y_min = valid_growth_rates.quantile(0.01)
@@ -450,7 +416,7 @@ def save_boxplot(df, bin_col, filename, xlabel, title):
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.boxplot(
         plot_data,
-        tick_labels=RATIO_LABELS,
+        tick_labels=SPEND_TERTILE_LABELS,
         showmeans=True,
         showfliers=False,
     )
@@ -489,6 +455,25 @@ def projects_with_complete_window(
 
 def count_commits_between(repo_commits, start, end):
     return (repo_commits.ge(start) & repo_commits.lt(end)).sum()
+
+
+def add_development_spend_tertiles(df):
+    df = df.copy()
+    tertiles = pd.Series(index=df.index, dtype="object")
+    ordered_index = df.sort_values(
+        ["development_expense_amount_usd", PROJECT_COL],
+        ascending=[True, True],
+    ).index
+
+    for label, index_chunk in zip(SPEND_TERTILE_LABELS, np.array_split(ordered_index, 3)):
+        tertiles.loc[index_chunk] = label
+
+    df[SPEND_TERTILE_COL] = pd.Categorical(
+        tertiles,
+        categories=SPEND_TERTILE_LABELS,
+        ordered=True,
+    )
+    return df
 
 
 def build_commit_change(df_analyzable, commits_by_repo, window_months):
@@ -556,85 +541,73 @@ def analyze_window(
     )
     print("Analyzable projects:", len(df_analyzable))
 
-    df_analysis = (
+    df_merged = (
         build_commit_change(df_analyzable, commits_by_repo, window_months)
         .merge(df_project_spending, left_on="slug", right_on=PROJECT_COL, how="inner")
-        .loc[lambda df: df["development_count_ratio_bin"].notna()]
-        .copy()
+    )
+    n_growth_rate_nan = df_merged["growth_rate_pct"].isna().sum()
+    df_analysis = add_development_spend_tertiles(
+        df_merged[df_merged["growth_rate_pct"].notna()].copy()
     )
 
     print("\n===== Merged analysis data =====")
-    print("Projects used in final analysis:", len(df_analysis))
+    print("Projects merged:", len(df_merged))
     print(
         "Projects with commits_before = 0 excluded from growth rate stats:",
-        df_analysis["growth_rate_pct"].isna().sum(),
+        n_growth_rate_nan,
     )
-    print(
-        "Projects with valid growth_rate_pct:",
-        df_analysis["growth_rate_pct"].notna().sum(),
+    print("Projects used in final analysis:", len(df_analysis))
+    print("\n===== Projects by development spending tertile =====")
+    print(df_analysis[SPEND_TERTILE_COL].value_counts().sort_index())
+
+    test_result = test_growth_rate_between_spend_tertiles(
+        df_analysis,
+        window_months=window_months,
     )
 
-    test_results = [
-        test_growth_rate_between_bins(
-            df_analysis,
-            bin_col=bin_col,
-            window_months=window_months,
-        )
-        for bin_col, *_ in RATIO_ANALYSES
-    ]
-
-    summaries = {}
-    for bin_col, kind, _, _, _ in RATIO_ANALYSES:
-        summary = summarize_by_bin(df_analysis, bin_col=bin_col)
-        summary["window_months"] = window_months
-        summaries[kind] = summary
-        print(f"\n===== Growth rate (%) summary by development {kind} ratio bin ({label}) =====")
-        print(summary.to_string(index=False))
+    summary = summarize_by_bin(df_analysis, bin_col=SPEND_TERTILE_COL)
+    summary["window_months"] = window_months
+    print(f"\n===== Growth rate (%) summary by development spend amount tertile ({label}) =====")
+    print(summary.to_string(index=False))
 
     df_analysis.to_csv(
-        f"rq2_development_ratio_and_commit_growth_rate_pct_project_level_{label}.csv",
+        f"rq2_development_spend_amount_tertile_and_commit_growth_rate_pct_project_level_{label}.csv",
         index=False,
     )
 
-    for bin_col, kind, filename_part, xlabel, title_part in RATIO_ANALYSES:
-        summaries[kind].to_csv(
-            f"rq2_development_{kind}_ratio_and_commit_growth_rate_pct_boxplot_summary_{label}.csv",
-            index=False,
-        )
-        save_boxplot(
-            df=df_analysis,
-            bin_col=bin_col,
-            filename=f"rq2_boxplot_commit_growth_rate_pct_by_{filename_part}_{label}.png",
-            xlabel=xlabel,
-            title=f"Commit growth rate by {title_part} ({window_months} months)",
-        )
+    summary.to_csv(
+        f"rq2_development_spend_amount_tertile_and_commit_growth_rate_pct_boxplot_summary_{label}.csv",
+        index=False,
+    )
+    save_boxplot(
+        df=df_analysis,
+        bin_col=SPEND_TERTILE_COL,
+        filename=f"rq2_boxplot_commit_growth_rate_pct_by_development_spend_amount_tertile_{label}.png",
+        xlabel="Development spending amount in USD tertile",
+        title=f"Commit growth rate by development spending amount ({window_months} months)",
+    )
 
-    return test_results, summaries["count"], summaries["amount"], df_analysis
+    return test_result, summary, df_analysis
 
 
-def save_all_windows(test_results, count_summaries, amount_summaries, analysis_results):
+def save_all_windows(test_results, summaries, analysis_results):
     df_test_results = pd.DataFrame(test_results)
-    df_count_summaries_all = pd.concat(count_summaries, ignore_index=True)
-    df_amount_summaries_all = pd.concat(amount_summaries, ignore_index=True)
+    df_summaries_all = pd.concat(summaries, ignore_index=True)
     df_analysis_all = pd.concat(analysis_results, ignore_index=True)
 
     print("\n===== Summary of statistical tests across windows =====")
     print(df_test_results.to_string(index=False))
 
     df_test_results.to_csv(
-        "rq2_growth_rate_mannwhitney_0_30_vs_30_60_all_windows.csv",
+        "rq2_growth_rate_mannwhitney_bottom_33_vs_top_33_by_development_spend_amount_all_windows.csv",
         index=False,
     )
-    df_count_summaries_all.to_csv(
-        "rq2_development_count_ratio_and_commit_growth_rate_pct_boxplot_summary_all_windows.csv",
-        index=False,
-    )
-    df_amount_summaries_all.to_csv(
-        "rq2_development_amount_ratio_and_commit_growth_rate_pct_boxplot_summary_all_windows.csv",
+    df_summaries_all.to_csv(
+        "rq2_development_spend_amount_tertile_and_commit_growth_rate_pct_boxplot_summary_all_windows.csv",
         index=False,
     )
     df_analysis_all.to_csv(
-        "rq2_development_ratio_and_commit_growth_rate_pct_project_level_all_windows.csv",
+        "rq2_development_spend_amount_tertile_and_commit_growth_rate_pct_project_level_all_windows.csv",
         index=False,
     )
 
@@ -645,25 +618,22 @@ def main():
     commit_args = load_commit_base(database_engine())
 
     all_test_results = []
-    all_count_summaries = []
-    all_amount_summaries = []
+    all_summaries = []
     all_analysis_results = []
 
     for window_months in WINDOW_MONTHS_LIST:
-        test_results, count_summary, amount_summary, df_analysis = analyze_window(
+        test_result, summary, df_analysis = analyze_window(
             window_months,
             *commit_args,
             df_project_spending,
         )
-        all_test_results.extend(test_results)
-        all_count_summaries.append(count_summary)
-        all_amount_summaries.append(amount_summary)
+        all_test_results.append(test_result)
+        all_summaries.append(summary)
         all_analysis_results.append(df_analysis)
 
     save_all_windows(
         all_test_results,
-        all_count_summaries,
-        all_amount_summaries,
+        all_summaries,
         all_analysis_results,
     )
 
