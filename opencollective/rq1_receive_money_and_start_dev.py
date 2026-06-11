@@ -7,11 +7,19 @@ from sqlalchemy import create_engine
 
 PROJECT_COL = "project_slug"
 
-OUTPUT_DETAIL_CSV = "rq1_paid_individual_developer_first_payment_vs_first_commit_detail.csv"
-OUTPUT_SUMMARY_CSV = "rq1_paid_individual_developer_first_payment_vs_first_commit_summary.csv"
-OUTPUT_MATCH_SUMMARY_CSV = "rq1_paid_individual_developer_matching_summary.csv"
-OUTPUT_TIMING_HIST_PNG = "rq1_days_from_first_commit_to_first_payment_hist.png"
-OUTPUT_TIMING_TYPE_BAR_PNG = "rq1_developer_timing_type_bar.png"
+
+ANALYSIS_CONFIGS = [
+    {
+        "analysis_label": "individual_development_payment",
+        "description": "When an individual receives money for only development purposes",
+        "where_extra": "AND is_development = true",
+    },
+    {
+        "analysis_label": "individual_any_payment",
+        "description": "When an individual receives any payment",
+        "where_extra": "",
+    },
+]
 
 
 COLLECTIVES_SQL = """
@@ -25,32 +33,6 @@ SELECT
 FROM public.collectives
 WHERE github_account IS NOT NULL
   AND github_account <> ''
-"""
-
-DEV_PAYMENTS_SQL = """
-SELECT
-    id AS transaction_id,
-    project_slug,
-    project_name,
-    created_at AS payment_created_at,
-    amount_value,
-    amount_currency,
-    from_account_slug,
-    from_account_name,
-    from_account_type,
-    to_account_slug,
-    to_account_name,
-    to_account_type,
-    expense_type,
-    expense_description,
-    description
-FROM public.collective_transactions
-WHERE kind = 'EXPENSE'
-  AND is_development = true
-  AND to_account_type = 'INDIVIDUAL'
-  AND to_account_slug IS NOT NULL
-  AND to_account_name IS NOT NULL
-  AND created_at IS NOT NULL
 """
 
 COMMIT_HISTORY_SQL = """
@@ -69,6 +51,46 @@ WHERE repo_name IS NOT NULL
 """
 
 
+def make_dev_payments_sql(where_extra):
+    return f"""
+SELECT
+    id AS transaction_id,
+    project_slug,
+    project_name,
+    created_at AS payment_created_at,
+    amount_value,
+    amount_currency,
+    from_account_slug,
+    from_account_name,
+    from_account_type,
+    to_account_slug,
+    to_account_name,
+    to_account_type,
+    expense_type,
+    expense_description,
+    description,
+    is_development
+FROM public.collective_transactions
+WHERE kind = 'EXPENSE'
+  AND to_account_type = 'INDIVIDUAL'
+  AND to_account_slug IS NOT NULL
+  AND to_account_name IS NOT NULL
+  AND created_at IS NOT NULL
+  {where_extra}
+"""
+
+
+def output_paths(analysis_label):
+    prefix = f"rq1_{analysis_label}"
+    return {
+        "detail_csv": f"{prefix}_first_payment_vs_first_commit_detail.csv",
+        "summary_csv": f"{prefix}_first_payment_vs_first_commit_summary.csv",
+        "match_summary_csv": f"{prefix}_matching_summary.csv",
+        "timing_bar_png": f"{prefix}_developer_timing_type_bar.png",
+        "days_hist_png": f"{prefix}_days_from_first_commit_to_first_payment_hist.png",
+    }
+
+
 def database_engine():
     password = api.load_sql_password_from_credentials()
     return create_engine(
@@ -77,10 +99,6 @@ def database_engine():
 
 
 def normalize_name(value):
-    """
-    Open Collective の to_account_name / to_account_slug と、
-    Git の author_name を比較するための簡易正規化。
-    """
     if pd.isna(value):
         return ""
 
@@ -114,19 +132,12 @@ def normalize_name(value):
     return value
 
 
-def load_data(engine):
+def load_common_data(engine):
     df_collectives = pd.read_sql(COLLECTIVES_SQL, engine)
-    df_payments = pd.read_sql(DEV_PAYMENTS_SQL, engine)
     df_commits = pd.read_sql(COMMIT_HISTORY_SQL, engine)
 
     df_collectives["created_at"] = pd.to_datetime(
         df_collectives["created_at"],
-        utc=True,
-        errors="coerce",
-    ).dt.tz_convert(None)
-
-    df_payments["payment_created_at"] = pd.to_datetime(
-        df_payments["payment_created_at"],
         utc=True,
         errors="coerce",
     ).dt.tz_convert(None)
@@ -155,6 +166,24 @@ def load_data(engine):
         .str.replace("/", "-", regex=False)
     )
 
+    df_commits["author_name_norm"] = df_commits["author_name"].map(normalize_name)
+
+    print("\n===== Loaded common data =====")
+    print("Collectives:", len(df_collectives))
+    print("Commit rows:", len(df_commits))
+
+    return df_collectives, df_commits
+
+
+def load_payments(engine, where_extra):
+    df_payments = pd.read_sql(make_dev_payments_sql(where_extra), engine)
+
+    df_payments["payment_created_at"] = pd.to_datetime(
+        df_payments["payment_created_at"],
+        utc=True,
+        errors="coerce",
+    ).dt.tz_convert(None)
+
     df_payments["amount_abs"] = pd.to_numeric(
         df_payments["amount_value"],
         errors="coerce",
@@ -167,14 +196,7 @@ def load_data(engine):
         normalize_name
     )
 
-    df_commits["author_name_norm"] = df_commits["author_name"].map(normalize_name)
-
-    print("\n===== Loaded data =====")
-    print("Collectives:", len(df_collectives))
-    print("Development payments to individuals:", len(df_payments))
-    print("Commit rows:", len(df_commits))
-
-    return df_collectives, df_payments, df_commits
+    return df_payments
 
 
 def build_project_commit_base(df_collectives, df_commits):
@@ -208,10 +230,7 @@ def build_project_commit_base(df_collectives, df_commits):
     return df_project_commits
 
 
-def build_first_development_payments(df_payments):
-    """
-    project_slug × to_account_slug 単位で初回開発支払いを作る。
-    """
+def build_first_payments(df_payments):
     group_cols = [
         PROJECT_COL,
         "project_name",
@@ -230,26 +249,24 @@ def build_first_development_payments(df_payments):
         .agg(
             first_payment_at=("payment_created_at", "min"),
             last_payment_at=("payment_created_at", "max"),
-            num_development_payments=("transaction_id", "count"),
-            total_development_payment_amount=("amount_abs", "sum"),
+            num_payments=("transaction_id", "count"),
+            total_payment_amount=("amount_abs", "sum"),
+            num_development_labeled_payments=("is_development", lambda s: (s == True).sum()),
+            num_non_development_labeled_payments=("is_development", lambda s: (s == False).sum()),
         )
         .reset_index()
     )
 
-    print("\n===== Development payment base =====")
-    print("Development payment rows:", len(df_payments))
+    print("\n===== Payment base =====")
+    print("Payment rows:", len(df_payments))
     print("Project-payee pairs:", len(df_first_payments))
-    print("Projects with development payments:", df_first_payments[PROJECT_COL].nunique())
-    print("Payees with development payments:", df_first_payments["to_account_slug"].nunique())
+    print("Projects with payments:", df_first_payments[PROJECT_COL].nunique())
+    print("Payees with payments:", df_first_payments["to_account_slug"].nunique())
 
     return df_first_payments
 
 
 def build_commit_authors(df_project_commits):
-    """
-    project_slug 内の author_name 単位で、コミット作者候補を作る。
-    author_email は後で project-payee 単位に統合するため、ここでは保持する。
-    """
     return (
         df_project_commits[
             [
@@ -268,17 +285,54 @@ def build_commit_authors(df_project_commits):
     )
 
 
+def unique_join(series):
+    values = (
+        series
+        .dropna()
+        .astype(str)
+        .sort_values()
+        .unique()
+        .tolist()
+    )
+    return "; ".join(values)
+
+
+def aggregate_matches_to_project_payee(df_matches_raw):
+    group_cols = [
+        PROJECT_COL,
+        "project_name",
+        "repo_name",
+        "github_account",
+        "to_account_slug",
+        "to_account_name",
+        "to_account_type",
+        "amount_currency",
+        "first_payment_at",
+        "last_payment_at",
+        "num_payments",
+        "total_payment_amount",
+        "num_development_labeled_payments",
+        "num_non_development_labeled_payments",
+    ]
+
+    return (
+        df_matches_raw
+        .groupby(group_cols, dropna=False)
+        .agg(
+            first_commit_at=("commit_time", "min"),
+            last_commit_at=("commit_time", "max"),
+            total_commits=("commit_hash", "nunique"),
+            matched_author_names=("author_name", unique_join),
+            matched_author_emails=("author_email", unique_join),
+            matched_author_name_count=("author_name", lambda s: s.dropna().nunique()),
+            matched_author_email_count=("author_email", lambda s: s.dropna().nunique()),
+            match_methods=("match_method", unique_join),
+        )
+        .reset_index()
+    )
+
+
 def match_payees_to_commits(df_first_payments, df_project_commits):
-    """
-    project_slug × to_account_slug の支払い先に対して、
-    同じ project_slug 内で一致する commit author の全コミットを紐づける。
-
-    一致条件:
-      1. normalized(to_account_name) = normalized(author_name)
-      2. normalized(to_account_slug) = normalized(author_name)
-
-    最終的には project_slug × to_account_slug 単位に戻す。
-    """
     pay_cols = [
         PROJECT_COL,
         "project_name",
@@ -290,8 +344,10 @@ def match_payees_to_commits(df_first_payments, df_project_commits):
         "amount_currency",
         "first_payment_at",
         "last_payment_at",
-        "num_development_payments",
-        "total_development_payment_amount",
+        "num_payments",
+        "total_payment_amount",
+        "num_development_labeled_payments",
+        "num_non_development_labeled_payments",
     ]
 
     df_commit_authors = build_commit_authors(df_project_commits)
@@ -318,8 +374,6 @@ def match_payees_to_commits(df_first_payments, df_project_commits):
         print("\nNo payees matched to commit authors.")
         return pd.DataFrame(), df_matches_raw
 
-    # 同じ project-payee-commit が複数の方法で一致した場合は重複を除く。
-    # name一致を優先する。
     match_priority = {
         "normalized_name": 1,
         "normalized_slug_to_author_name": 2,
@@ -350,7 +404,12 @@ def match_payees_to_commits(df_first_payments, df_project_commits):
         df_matches_raw[[PROJECT_COL, "to_account_slug"]].drop_duplicates().shape[0],
     )
     print("Matched projects:", df_matches_raw[PROJECT_COL].nunique())
-    print("Matched commit authors:", df_matches_raw[["author_name", "author_email"]].drop_duplicates().shape[0])
+    print(
+        "Matched commit authors:",
+        df_matches_raw[["author_name", "author_email"]]
+        .drop_duplicates()
+        .shape[0],
+    )
     print("\nMatch method distribution:")
     print(df_matches_raw["match_method"].value_counts().to_string())
 
@@ -359,65 +418,11 @@ def match_payees_to_commits(df_first_payments, df_project_commits):
     return df_matched_payees, df_matches_raw
 
 
-def unique_join(series):
-    values = (
-        series
-        .dropna()
-        .astype(str)
-        .sort_values()
-        .unique()
-        .tolist()
-    )
-    return "; ".join(values)
-
-
-def aggregate_matches_to_project_payee(df_matches_raw):
-    """
-    project_slug × to_account_slug に戻す。
-    複数 author_name / author_email に一致した場合、その全コミットを統合する。
-    """
-    group_cols = [
-        PROJECT_COL,
-        "project_name",
-        "repo_name",
-        "github_account",
-        "to_account_slug",
-        "to_account_name",
-        "to_account_type",
-        "amount_currency",
-        "first_payment_at",
-        "last_payment_at",
-        "num_development_payments",
-        "total_development_payment_amount",
-    ]
-
-    df_matched_payees = (
-        df_matches_raw
-        .groupby(group_cols, dropna=False)
-        .agg(
-            first_commit_at=("commit_time", "min"),
-            last_commit_at=("commit_time", "max"),
-            total_commits=("commit_hash", "nunique"),
-            matched_author_names=("author_name", unique_join),
-            matched_author_emails=("author_email", unique_join),
-            matched_author_name_count=("author_name", lambda s: s.dropna().nunique()),
-            matched_author_email_count=("author_email", lambda s: s.dropna().nunique()),
-            match_methods=("match_method", unique_join),
-        )
-        .reset_index()
-    )
-
-    return df_matched_payees
-
-
 def classify_timing(row):
-    first_commit_at = row["first_commit_at"]
-    first_payment_at = row["first_payment_at"]
-
-    if pd.isna(first_commit_at):
+    if pd.isna(row["first_commit_at"]):
         return "matched_but_no_commit_time"
 
-    if first_commit_at < first_payment_at:
+    if row["first_commit_at"] < row["first_payment_at"]:
         return "pre_existing_contributor"
 
     return "started_after_payment"
@@ -439,19 +444,13 @@ def add_timing_columns(df_matched_payees):
     return df
 
 
-def summarize_matching(df_first_payments, df_matched_payees):
+def summarize_matching(df_first_payments, df_matched_payees, paths):
     total_project_payees = df_first_payments[
-        [
-            PROJECT_COL,
-            "to_account_slug",
-        ]
+        [PROJECT_COL, "to_account_slug"]
     ].drop_duplicates()
 
     matched_project_payees = df_matched_payees[
-        [
-            PROJECT_COL,
-            "to_account_slug",
-        ]
+        [PROJECT_COL, "to_account_slug"]
     ].drop_duplicates()
 
     matched = matched_project_payees.merge(
@@ -479,8 +478,8 @@ def summarize_matching(df_first_payments, df_matched_payees):
     print("\n===== Matching summary =====")
     print(df_summary.to_string(index=False))
 
-    df_summary.to_csv(OUTPUT_MATCH_SUMMARY_CSV, index=False)
-    print(f"Saved: {OUTPUT_MATCH_SUMMARY_CSV}")
+    df_summary.to_csv(paths["match_summary_csv"], index=False)
+    print(f"Saved: {paths['match_summary_csv']}")
 
     return df_summary
 
@@ -511,16 +510,10 @@ def summarize_timing(df_detail):
             ),
             median_total_commits=("total_commits", "median"),
             mean_total_commits=("total_commits", "mean"),
-            median_num_development_payments=("num_development_payments", "median"),
-            mean_num_development_payments=("num_development_payments", "mean"),
-            median_total_development_payment_amount=(
-                "total_development_payment_amount",
-                "median",
-            ),
-            mean_total_development_payment_amount=(
-                "total_development_payment_amount",
-                "mean",
-            ),
+            median_num_payments=("num_payments", "median"),
+            mean_num_payments=("num_payments", "mean"),
+            median_total_payment_amount=("total_payment_amount", "median"),
+            mean_total_payment_amount=("total_payment_amount", "mean"),
         )
         .reset_index()
     )
@@ -528,12 +521,7 @@ def summarize_timing(df_detail):
     total = len(df_detail)
     summary["ratio"] = summary["n_project_payees"] / total if total else np.nan
 
-    summary = summary.sort_values(
-        "developer_timing_type",
-        ascending=True,
-    ).reset_index(drop=True)
-
-    return summary
+    return summary.sort_values("developer_timing_type").reset_index(drop=True)
 
 
 def print_key_summary(df_detail, df_summary):
@@ -584,7 +572,7 @@ def print_key_summary(df_detail, df_summary):
         )
 
 
-def save_timing_type_bar(df_summary):
+def save_timing_type_bar(df_summary, paths, description):
     fig, ax = plt.subplots(figsize=(9, 5))
 
     ax.bar(
@@ -594,18 +582,18 @@ def save_timing_type_bar(df_summary):
 
     ax.set_xlabel("Developer timing type")
     ax.set_ylabel("Number of project-payee pairs")
-    ax.set_title("Timing of first commit relative to first development payment")
+    ax.set_title(f"Timing of first commit relative to first payment\n{description}")
     ax.tick_params(axis="x", rotation=20)
     ax.grid(axis="y", alpha=0.3)
 
     fig.tight_layout()
-    fig.savefig(OUTPUT_TIMING_TYPE_BAR_PNG, dpi=300)
-    plt.show()
+    fig.savefig(paths["timing_bar_png"], dpi=300)
+    plt.close(fig)
 
-    print(f"Saved: {OUTPUT_TIMING_TYPE_BAR_PNG}")
+    print(f"Saved: {paths['timing_bar_png']}")
 
 
-def save_days_histogram(df_detail):
+def save_days_histogram(df_detail, paths, description):
     values = df_detail["days_from_first_commit_to_first_payment"].dropna()
 
     if values.empty:
@@ -624,28 +612,41 @@ def save_days_histogram(df_detail):
     ax.set_xlabel("Days from first commit to first payment")
     ax.set_ylabel("Number of project-payee pairs")
     ax.set_title(
-        "Distribution of timing difference between first commit and first payment"
+        "Distribution of timing difference between first commit and first payment\n"
+        f"{description}"
     )
     ax.grid(axis="y", alpha=0.3)
 
     fig.tight_layout()
-    fig.savefig(OUTPUT_TIMING_HIST_PNG, dpi=300)
-    plt.show()
+    fig.savefig(paths["days_hist_png"], dpi=300)
+    plt.close(fig)
 
-    print(f"Saved: {OUTPUT_TIMING_HIST_PNG}")
+    print(f"Saved: {paths['days_hist_png']}")
 
 
-def main():
-    engine = database_engine()
+def run_analysis(config, engine, df_project_commits):
+    analysis_label = config["analysis_label"]
+    description = config["description"]
+    where_extra = config["where_extra"]
+    paths = output_paths(analysis_label)
 
-    df_collectives, df_payments, df_commits = load_data(engine)
+    print("\n\n" + "=" * 80)
+    print(f"===== Analysis: {analysis_label} =====")
+    print(f"===== Meaning: {description} =====")
+    print("=" * 80)
 
-    df_project_commits = build_project_commit_base(
-        df_collectives,
-        df_commits,
-    )
+    df_payments = load_payments(engine, where_extra)
 
-    df_first_payments = build_first_development_payments(df_payments)
+    print("\n===== Loaded payments =====")
+    print("Payment rows:", len(df_payments))
+    print("Projects:", df_payments[PROJECT_COL].nunique())
+    print("Payees:", df_payments["to_account_slug"].nunique())
+
+    if "is_development" in df_payments.columns:
+        print("\n===== is_development distribution in target payments =====")
+        print(df_payments["is_development"].value_counts(dropna=False).to_string())
+
+    df_first_payments = build_first_payments(df_payments)
 
     df_matched_payees, df_matches_raw = match_payees_to_commits(
         df_first_payments,
@@ -653,24 +654,90 @@ def main():
     )
 
     if df_matched_payees.empty:
-        print("No matched payees. Stop analysis.")
-        return
+        print("No matched payees. Stop this analysis.")
+        return None
 
-    summarize_matching(df_first_payments, df_matched_payees)
+    summarize_matching(df_first_payments, df_matched_payees, paths)
 
     df_detail = add_timing_columns(df_matched_payees)
+    df_detail.insert(0, "analysis_label", analysis_label)
+    df_detail.insert(1, "analysis_description", description)
+
     df_summary = summarize_timing(df_detail)
+    df_summary.insert(0, "analysis_label", analysis_label)
+    df_summary.insert(1, "analysis_description", description)
 
     print_key_summary(df_detail, df_summary)
 
-    df_detail.to_csv(OUTPUT_DETAIL_CSV, index=False)
-    df_summary.to_csv(OUTPUT_SUMMARY_CSV, index=False)
+    df_detail.to_csv(paths["detail_csv"], index=False)
+    df_summary.to_csv(paths["summary_csv"], index=False)
 
-    print(f"\nSaved: {OUTPUT_DETAIL_CSV}")
-    print(f"Saved: {OUTPUT_SUMMARY_CSV}")
+    print(f"\nSaved: {paths['detail_csv']}")
+    print(f"Saved: {paths['summary_csv']}")
 
-    save_timing_type_bar(df_summary)
-    save_days_histogram(df_detail)
+    save_timing_type_bar(df_summary, paths, description)
+    save_days_histogram(df_detail, paths, description)
+
+    return {
+        "analysis_label": analysis_label,
+        "description": description,
+        "detail": df_detail,
+        "summary": df_summary,
+    }
+
+
+def save_combined_summary(results):
+    summaries = [
+        result["summary"]
+        for result in results
+        if result is not None and result.get("summary") is not None
+    ]
+
+    if not summaries:
+        return
+
+    df_combined_summary = pd.concat(summaries, ignore_index=True)
+    output_path = "rq1_combined_individual_payment_timing_summary.csv"
+    df_combined_summary.to_csv(output_path, index=False)
+
+    print("\n===== Combined summary =====")
+    print(
+        df_combined_summary[
+            [
+                "analysis_label",
+                "developer_timing_type",
+                "n_project_payees",
+                "ratio",
+                "n_projects",
+                "n_payees",
+                "median_days_from_first_commit_to_first_payment",
+            ]
+        ].to_string(index=False)
+    )
+    print(f"Saved: {output_path}")
+
+
+def main():
+    engine = database_engine()
+
+    df_collectives, df_commits = load_common_data(engine)
+
+    df_project_commits = build_project_commit_base(
+        df_collectives,
+        df_commits,
+    )
+
+    results = []
+
+    for config in ANALYSIS_CONFIGS:
+        result = run_analysis(
+            config=config,
+            engine=engine,
+            df_project_commits=df_project_commits,
+        )
+        results.append(result)
+
+    save_combined_summary(results)
 
 
 if __name__ == "__main__":
