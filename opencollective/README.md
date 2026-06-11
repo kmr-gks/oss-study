@@ -84,6 +84,11 @@ labeling_all_by_llm_2nd_devornot.py
 labeling_by_llm_2nd.py
 
 
+#すべてのデータをdevelopmentかそれ以外に分類する(5回)
+labeling_all_by_llm_2nd_devoqlrnot.py
+#sqlに分類結果を結合
+ python .\add-binary-class-results-to-sql.py    
+
 python .\rq1_random_1784sampling.py
 python .\rq1_labeling_1784samples.py
 
