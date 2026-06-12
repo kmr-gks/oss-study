@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from forex_python.converter import CurrencyRates
-from scipy.stats import mannwhitneyu
+from scipy.stats import kruskal
 from sqlalchemy import create_engine
 
 
@@ -318,59 +318,83 @@ def test_growth_rate_between_spend_tertiles(
     value_col="growth_rate_pct",
     window_months=None,
 ):
-    group_low = df.loc[df[SPEND_TERTILE_COL] == SPEND_TERTILE_LABELS[0], value_col]
-    group_high = df.loc[df[SPEND_TERTILE_COL] == SPEND_TERTILE_LABELS[-1], value_col]
+    groups = {
+        label: df.loc[df[SPEND_TERTILE_COL] == label, value_col].dropna()
+        for label in SPEND_TERTILE_LABELS
+    }
 
     title_suffix = f" ({window_months}m)" if window_months is not None else ""
-    print(f"\n===== Mann-Whitney U test: {SPEND_TERTILE_COL}{title_suffix} =====")
-    print_group_stats(SPEND_TERTILE_LABELS[0], group_low)
-    print_group_stats(SPEND_TERTILE_LABELS[-1], group_high)
+    print(f"\n===== Kruskal-Wallis test: {SPEND_TERTILE_COL}{title_suffix} =====")
 
-    has_both_groups = len(group_low) > 0 and len(group_high) > 0
+    for label in SPEND_TERTILE_LABELS:
+        print_group_stats(label, groups[label])
+
+    has_all_groups = all(len(groups[label]) > 0 for label in SPEND_TERTILE_LABELS)
+
     result = {
         "window_months": window_months,
         "bin_col": SPEND_TERTILE_COL,
-        **stats_for_result(group_low, group_high, include_stats=has_both_groups),
     }
 
-    if not has_both_groups:
-        print("Skipping test because one of the groups is empty.")
+    for label in SPEND_TERTILE_LABELS:
+        safe_label = (
+            label.lower()
+            .replace(" ", "_")
+            .replace("%", "pct")
+        )
+
+        group = groups[label]
+        result[f"n_{safe_label}"] = len(group)
+
+        if has_all_groups:
+            for name, func in STAT_FUNCS:
+                result[f"{name}_{safe_label}"] = func(group)
+        else:
+            for name, func in STAT_FUNCS:
+                result[f"{name}_{safe_label}"] = np.nan
+
+    if not has_all_groups:
+        print("Skipping test because at least one group is empty.")
         result.update(
             {
-                "mannwhitney_u_greater": np.nan,
-                "mannwhitney_p_greater": np.nan,
-                "mannwhitney_u_two_sided": np.nan,
-                "mannwhitney_p_two_sided": np.nan,
-                "cliffs_delta": np.nan,
-                "effect_size_label": "NA",
+                "kruskal_h_statistic": np.nan,
+                "kruskal_p_value": np.nan,
+                "epsilon_squared": np.nan,
             }
         )
         return result
 
-    u_result_greater = mannwhitneyu(group_high, group_low, alternative="greater")
-    u_result_two_sided = mannwhitneyu(group_high, group_low, alternative="two-sided")
-    delta = cliffs_delta(group_high, group_low)
-    label = effect_size_label(delta)
+    kruskal_result = kruskal(
+        groups[SPEND_TERTILE_LABELS[0]],
+        groups[SPEND_TERTILE_LABELS[1]],
+        groups[SPEND_TERTILE_LABELS[2]],
+    )
 
-    print("\nMann-Whitney U test")
-    print(f"  U statistic, greater   = {u_result_greater.statistic:.3f}")
-    print(f"  p-value, greater       = {u_result_greater.pvalue:.6f}")
-    print(f"  U statistic, two-sided = {u_result_two_sided.statistic:.3f}")
-    print(f"  p-value, two-sided     = {u_result_two_sided.pvalue:.6f}")
+    # 効果量: epsilon squared
+    # H: Kruskal-Wallis statistic
+    # k: number of groups
+    # n: total sample size
+    h = kruskal_result.statistic
+    k = len(SPEND_TERTILE_LABELS)
+    n = sum(len(groups[label]) for label in SPEND_TERTILE_LABELS)
+
+    epsilon_squared = (h - k + 1) / (n - k)
+
+    print("\nKruskal-Wallis test")
+    print(f"  H statistic = {kruskal_result.statistic:.3f}")
+    print(f"  p-value     = {kruskal_result.pvalue:.6f}")
+
     print("\nEffect size")
-    print(f"  Cliff's delta = {delta:.3f}")
-    print(f"  Effect size label = {label}")
+    print(f"  Epsilon squared = {epsilon_squared:.3f}")
 
     result.update(
         {
-            "mannwhitney_u_greater": u_result_greater.statistic,
-            "mannwhitney_p_greater": u_result_greater.pvalue,
-            "mannwhitney_u_two_sided": u_result_two_sided.statistic,
-            "mannwhitney_p_two_sided": u_result_two_sided.pvalue,
-            "cliffs_delta": delta,
-            "effect_size_label": label,
+            "kruskal_h_statistic": kruskal_result.statistic,
+            "kruskal_p_value": kruskal_result.pvalue,
+            "epsilon_squared": epsilon_squared,
         }
     )
+
     return result
 
 
@@ -594,9 +618,9 @@ def save_all_windows(test_results, summaries, analysis_results):
     print(df_test_results.to_string(index=False))
 
     df_test_results.to_csv(
-        "rq2_growth_rate_mannwhitney_bottom_33_vs_top_33_by_development_spend_amount_all_windows.csv",
-        index=False,
-    )
+    "rq2_growth_rate_kruskal_wallis_by_development_spend_amount_tertile_all_windows.csv",
+    index=False,
+)
     df_summaries_all.to_csv(
         "rq2_development_spend_amount_tertile_and_commit_growth_rate_pct_boxplot_summary_all_windows.csv",
         index=False,
