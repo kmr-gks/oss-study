@@ -570,11 +570,6 @@ def analyze_window(
     print(f"\n===== Growth rate (%) summary by development spend amount tertile ({label}) =====")
     print(summary.to_string(index=False))
 
-    df_analysis.to_csv(
-        f"rq2_development_spend_amount_tertile_and_commit_growth_rate_pct_project_level_{label}.csv",
-        index=False,
-    )
-
     summary.to_csv(
         f"rq2_development_spend_amount_tertile_and_commit_growth_rate_pct_boxplot_summary_{label}.csv",
         index=False,
@@ -604,10 +599,6 @@ def save_all_windows(test_results, summaries, analysis_results):
     )
     df_summaries_all.to_csv(
         "rq2_development_spend_amount_tertile_and_commit_growth_rate_pct_boxplot_summary_all_windows.csv",
-        index=False,
-    )
-    df_analysis_all.to_csv(
-        "rq2_development_spend_amount_tertile_and_commit_growth_rate_pct_project_level_all_windows.csv",
         index=False,
     )
 
