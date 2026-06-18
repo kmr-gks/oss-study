@@ -227,7 +227,7 @@ for kind_value in ["CONTRIBUTION", "EXPENSE"]:
     )
 
     output_csv = f"pq1_money_flow_{kind_value.lower()}_from_account_type_to_account_type_usd.csv"
-    output_png = f"pq1_money_flow_{kind_value.lower()}_from_account_type_to_account_type_usd_heatmap.png"
+    output_png = f"pq1_money_flow_{kind_value.lower()}_from_account_type_to_account_type_usd_heatmap.pdf"
 
     df_flow_table.to_csv(output_csv)
 
@@ -259,7 +259,7 @@ for kind_value in ["CONTRIBUTION", "EXPENSE"]:
     plt.title(f"Money flow by account type, kind = {kind_value}, converted to USD")
 
     plt.tight_layout()
-    plt.savefig(output_png, dpi=300)
+    plt.savefig(output_png, bbox_inches="tight")
     plt.show()
 
     print(f"Saved: {output_csv}")
@@ -312,8 +312,8 @@ plt.legend()
 plt.tight_layout()
 
 plt.savefig(
-    "pq1_yearly_money_contributed_to_open_source_usd.png",
-    dpi=300
+    "pq1_yearly_money_contributed_to_open_source_usd.pdf",
+    bbox_inches="tight"
 )
 
 plt.show()

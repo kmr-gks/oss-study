@@ -470,8 +470,8 @@ plt.grid(True, alpha=0.3)
 plt.tight_layout()
 
 plt.savefig(
-    "rq2_monthly_commits_around_opencollective_registration_mean_median.png",
-    dpi=300
+    "rq2_monthly_commits_around_opencollective_registration_mean_median.pdf",
+    bbox_inches="tight"
 )
 
 plt.show()
