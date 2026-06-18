@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from forex_python.converter import CurrencyRates
-from scipy.stats import kruskal
+from scipy.stats import kruskal, mannwhitneyu
 from sqlalchemy import create_engine
 
 
@@ -313,6 +313,112 @@ def stats_for_result(group_low, group_high, include_stats=True):
     return result
 
 
+def pairwise_mannwhitney_between_tertiles(
+    groups,
+    value_col="growth_rate_pct",
+    window_months=None,
+):
+    pair_labels = [
+        (SPEND_TERTILE_LABELS[0], SPEND_TERTILE_LABELS[1]),
+        (SPEND_TERTILE_LABELS[0], SPEND_TERTILE_LABELS[2]),
+        (SPEND_TERTILE_LABELS[1], SPEND_TERTILE_LABELS[2]),
+    ]
+
+    pairwise_results = []
+
+    print("\n===== Pairwise Mann-Whitney U tests =====")
+
+    for group_a_label, group_b_label in pair_labels:
+        group_a = groups[group_a_label].dropna()
+        group_b = groups[group_b_label].dropna()
+
+        print(f"\n--- {group_a_label} vs {group_b_label} ---")
+        print_group_stats(group_a_label, group_a)
+        print_group_stats(group_b_label, group_b)
+
+        if len(group_a) == 0 or len(group_b) == 0:
+            pairwise_results.append({
+                "window_months": window_months,
+                "group_a": group_a_label,
+                "group_b": group_b_label,
+                "n_group_a": len(group_a),
+                "n_group_b": len(group_b),
+                "median_group_a": np.nan,
+                "median_group_b": np.nan,
+                "mannwhitney_u_two_sided": np.nan,
+                "mannwhitney_p_two_sided": np.nan,
+                "mannwhitney_p_two_sided_bonferroni": np.nan,
+                "mannwhitney_u_greater_b_gt_a": np.nan,
+                "mannwhitney_p_greater_b_gt_a": np.nan,
+                "mannwhitney_p_greater_b_gt_a_bonferroni": np.nan,
+                "cliffs_delta_b_vs_a": np.nan,
+                "effect_size_label": "NA",
+            })
+            continue
+
+        # 両側検定：2群に差があるか
+        u_two_sided = mannwhitneyu(
+            group_b,
+            group_a,
+            alternative="two-sided"
+        )
+
+        # 片側検定：後ろの群の方が前の群より大きいか
+        # 例: Top 33% > Bottom 33%
+        u_greater = mannwhitneyu(
+            group_b,
+            group_a,
+            alternative="greater"
+        )
+
+        delta = cliffs_delta(group_b, group_a)
+        label = effect_size_label(delta)
+
+        # 3回比較するので Bonferroni 補正
+        p_two_sided_bonferroni = min(u_two_sided.pvalue * 3, 1.0)
+        p_greater_bonferroni = min(u_greater.pvalue * 3, 1.0)
+
+        print("\nMann-Whitney U test")
+        print(f"  U statistic, two-sided       = {u_two_sided.statistic:.3f}")
+        print(f"  p-value, two-sided           = {u_two_sided.pvalue:.6f}")
+        print(f"  p-value, two-sided Bonferroni= {p_two_sided_bonferroni:.6f}")
+        print(f"  U statistic, {group_b_label} > {group_a_label} = {u_greater.statistic:.3f}")
+        print(f"  p-value, {group_b_label} > {group_a_label}     = {u_greater.pvalue:.6f}")
+        print(f"  p-value, greater Bonferroni  = {p_greater_bonferroni:.6f}")
+
+        print("\nEffect size")
+        print(f"  Cliff's delta, {group_b_label} vs {group_a_label} = {delta:.3f}")
+        print(f"  Effect size label = {label}")
+
+        pairwise_results.append({
+            "window_months": window_months,
+            "value_col": value_col,
+            "group_a": group_a_label,
+            "group_b": group_b_label,
+            "hypothesis_greater": f"{group_b_label} > {group_a_label}",
+            "n_group_a": len(group_a),
+            "n_group_b": len(group_b),
+            "median_group_a": group_a.median(),
+            "median_group_b": group_b.median(),
+            "mean_group_a": group_a.mean(),
+            "mean_group_b": group_b.mean(),
+            "q1_group_a": group_a.quantile(0.25),
+            "q1_group_b": group_b.quantile(0.25),
+            "q3_group_a": group_a.quantile(0.75),
+            "q3_group_b": group_b.quantile(0.75),
+            "mannwhitney_u_two_sided": u_two_sided.statistic,
+            "mannwhitney_p_two_sided": u_two_sided.pvalue,
+            "mannwhitney_p_two_sided_bonferroni": p_two_sided_bonferroni,
+            "mannwhitney_u_greater_b_gt_a": u_greater.statistic,
+            "mannwhitney_p_greater_b_gt_a": u_greater.pvalue,
+            "mannwhitney_p_greater_b_gt_a_bonferroni": p_greater_bonferroni,
+            "cliffs_delta_b_vs_a": delta,
+            "effect_size_label": label,
+        })
+
+    return pd.DataFrame(pairwise_results)
+
+
 def test_growth_rate_between_spend_tertiles(
     df,
     value_col="growth_rate_pct",
@@ -395,7 +501,13 @@ def test_growth_rate_between_spend_tertiles(
         }
     )
 
-    return result
+    pairwise_results = pairwise_mannwhitney_between_tertiles(
+        groups=groups,
+        value_col=value_col,
+        window_months=window_months,
+    )
+
+    return result, pairwise_results
 
 
 def summarize_by_bin(df, bin_col):
@@ -451,7 +563,7 @@ def save_boxplot(df, bin_col, filename, xlabel, title):
     ax.set_title(title)
     ax.grid(axis="y", alpha=0.3)
     fig.tight_layout()
-    fig.savefig(filename, dpi=300)
+    fig.savefig(filename, bbox_inches="tight")
     plt.show()
     print(f"Saved figure: {filename}")
 
@@ -584,7 +696,7 @@ def analyze_window(
     print("\n===== Projects by development spending tertile =====")
     print(df_analysis[SPEND_TERTILE_COL].value_counts().sort_index())
 
-    test_result = test_growth_rate_between_spend_tertiles(
+    test_result, pairwise_result = test_growth_rate_between_spend_tertiles(
         df_analysis,
         window_months=window_months,
     )
@@ -601,26 +713,36 @@ def analyze_window(
     save_boxplot(
         df=df_analysis,
         bin_col=SPEND_TERTILE_COL,
-        filename=f"rq2_boxplot_commit_growth_rate_pct_by_development_spend_amount_tertile_{label}.png",
+        filename=f"rq2_boxplot_commit_growth_rate_pct_by_development_spend_amount_tertile_{label}.pdf",
         xlabel="Development spending amount in USD tertile",
         title=f"Commit growth rate by development spending amount ({window_months} months)",
     )
 
-    return test_result, summary, df_analysis
+    return test_result, pairwise_result, summary, df_analysis
 
 
-def save_all_windows(test_results, summaries, analysis_results):
+def save_all_windows(test_results, pairwise_results, summaries, analysis_results):
     df_test_results = pd.DataFrame(test_results)
+    df_pairwise_results = pd.concat(pairwise_results, ignore_index=True)
     df_summaries_all = pd.concat(summaries, ignore_index=True)
     df_analysis_all = pd.concat(analysis_results, ignore_index=True)
 
-    print("\n===== Summary of statistical tests across windows =====")
+    print("\n===== Summary of Kruskal-Wallis tests across windows =====")
     print(df_test_results.to_string(index=False))
 
+    print("\n===== Summary of pairwise Mann-Whitney U tests across windows =====")
+    print(df_pairwise_results.to_string(index=False))
+
     df_test_results.to_csv(
-    "rq2_growth_rate_kruskal_wallis_by_development_spend_amount_tertile_all_windows.csv",
-    index=False,
-)
+        "rq2_growth_rate_kruskal_wallis_by_development_spend_amount_tertile_all_windows.csv",
+        index=False,
+    )
+
+    df_pairwise_results.to_csv(
+        "rq2_growth_rate_pairwise_mannwhitney_by_development_spend_amount_tertile_all_windows.csv",
+        index=False,
+    )
+
     df_summaries_all.to_csv(
         "rq2_development_spend_amount_tertile_and_commit_growth_rate_pct_boxplot_summary_all_windows.csv",
         index=False,
@@ -633,21 +755,24 @@ def main():
     commit_args = load_commit_base(database_engine())
 
     all_test_results = []
+    all_pairwise_results = []
     all_summaries = []
     all_analysis_results = []
 
     for window_months in WINDOW_MONTHS_LIST:
-        test_result, summary, df_analysis = analyze_window(
+        test_result, pairwise_result, summary, df_analysis = analyze_window(
             window_months,
             *commit_args,
             df_project_spending,
         )
         all_test_results.append(test_result)
+        all_pairwise_results.append(pairwise_result)
         all_summaries.append(summary)
         all_analysis_results.append(df_analysis)
 
     save_all_windows(
         all_test_results,
+        all_pairwise_results,
         all_summaries,
         all_analysis_results,
     )
