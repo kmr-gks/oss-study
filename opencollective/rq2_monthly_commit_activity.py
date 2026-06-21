@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sqlalchemy import create_engine
 from scipy.stats import wilcoxon, ttest_rel
+from matplotlib.ticker import MaxNLocator
 
 engine = create_engine(
     f"postgresql+psycopg2://postgres:{api.load_sql_password_from_credentials()}@localhost:5432/opencollective"
@@ -434,7 +435,7 @@ df_summary.to_csv(
 # 10. グラフ化：平均と中央値
 # =========================
 
-plt.figure(figsize=(12, 6))
+plt.figure(figsize=(5,3.5))
 
 plt.plot(
     df_summary["plot_month"],
@@ -464,13 +465,16 @@ plot_months = list(range(-12, 0)) + list(range(1, 13))
 plt.xticks(plot_months)
 plt.xlabel("Months before / after Open Collective registration")
 plt.ylabel("Monthly commit count")
-plt.title("Monthly commit activity before and after Open Collective registration")
+#plt.title("Monthly commit activity before and after Open Collective registration")
 plt.legend()
 plt.grid(True, alpha=0.3)
+
+plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True))
+
 plt.tight_layout()
 
 plt.savefig(
-    "rq2_monthly_commits_around_opencollective_registration_mean_median.pdf",
+    "rq3_monthly_commits_around_opencollective_registration_mean_median.pdf",
     bbox_inches="tight"
 )
 

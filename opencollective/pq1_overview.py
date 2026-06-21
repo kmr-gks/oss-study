@@ -227,7 +227,7 @@ for kind_value in ["CONTRIBUTION", "EXPENSE"]:
     )
 
     output_csv = f"pq1_money_flow_{kind_value.lower()}_from_account_type_to_account_type_usd.csv"
-    output_png = f"pq1_money_flow_{kind_value.lower()}_from_account_type_to_account_type_usd_heatmap.pdf"
+    output_png = f"rq2_money_flow_{kind_value.lower()}_from_account_type_to_account_type_usd_heatmap.pdf"
 
     df_flow_table.to_csv(output_csv)
 
@@ -236,7 +236,7 @@ for kind_value in ["CONTRIBUTION", "EXPENSE"]:
 
     flow_values_log = np.log1p(df_flow_table.values)
 
-    plt.figure(figsize=(12, 8))
+    plt.figure(figsize=(5, 3.5))
 
     im = plt.imshow(flow_values_log, aspect="auto")
 
@@ -256,7 +256,7 @@ for kind_value in ["CONTRIBUTION", "EXPENSE"]:
 
     plt.xlabel("To account type")
     plt.ylabel("From account type")
-    plt.title(f"Money flow by account type, kind = {kind_value}, converted to USD")
+    #plt.title(f"Money flow by account type, kind = {kind_value}, converted to USD")
 
     plt.tight_layout()
     plt.savefig(output_png, bbox_inches="tight")
@@ -295,7 +295,7 @@ df_yearly.to_csv(
 print("\n===== Yearly amount contributed to open-source =====")
 print(df_yearly.to_string(index=False))
 
-plt.figure(figsize=(12, 6))
+plt.figure(figsize=(5, 3.5),constrained_layout=True)
 
 plt.plot(
     df_yearly["year"],
@@ -305,14 +305,16 @@ plt.plot(
 )
 
 plt.xlabel("Year")
-plt.ylabel("Amount contributed to open-source projects (USD)")
-plt.title("Yearly amount of money contributed to open-source projects")
+#y axis unit: millions of USD
+plt.ylabel("Amount contributed to OSS projects (M USD)")
+plt.gca().yaxis.set_major_formatter(lambda x, _: f"{x/1e6:.1f}")
+
+#plt.title("Yearly amount of money contributed to open-source projects")
 plt.grid(True, alpha=0.3)
 plt.legend()
-plt.tight_layout()
 
 plt.savefig(
-    "pq1_yearly_money_contributed_to_open_source_usd.pdf",
+    "rq1_yearly_money_contributed_to_open_source_usd.pdf",
     bbox_inches="tight"
 )
 

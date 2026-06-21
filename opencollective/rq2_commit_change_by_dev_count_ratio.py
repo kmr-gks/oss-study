@@ -11,7 +11,7 @@ from sqlalchemy import create_engine
 
 PROJECT_COL = "project_slug"
 CONFIDENCE_THRESHOLD = 0.9
-WINDOW_MONTHS_LIST = [6, 12]
+WINDOW_MONTHS_LIST = [12]
 BASE_CURRENCY = "USD"
 
 CSV_FILES = [f"predictions_2nd_all_devornot_{i}.csv" for i in range(1, 6)]
@@ -549,11 +549,11 @@ def save_boxplot(df, bin_col, filename, xlabel, title):
     y_min = valid_growth_rates.quantile(0.01)
     y_max = valid_growth_rates.quantile(0.95)
 
-    fig, ax = plt.subplots(figsize=(10, 6))
+    fig, ax = plt.subplots(figsize=(5, 3.5))
     ax.boxplot(
         plot_data,
         tick_labels=SPEND_TERTILE_LABELS,
-        showmeans=True,
+        showmeans=False,
         showfliers=False,
     )
     ax.axhline(y=0, linestyle="--", linewidth=1)
@@ -713,7 +713,7 @@ def analyze_window(
     save_boxplot(
         df=df_analysis,
         bin_col=SPEND_TERTILE_COL,
-        filename=f"rq2_boxplot_commit_growth_rate_pct_by_development_spend_amount_tertile_{label}.pdf",
+        filename=f"rq3_boxplot_commit_growth_rate_pct_by_development_spend_amount_tertile_{label}.pdf",
         xlabel="Development spending amount in USD tertile",
         title=f"Commit growth rate by development spending amount ({window_months} months)",
     )
