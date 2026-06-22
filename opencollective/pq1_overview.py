@@ -301,12 +301,12 @@ plt.plot(
     df_yearly["year"],
     df_yearly["total_contributed_usd"],
     marker="o",
-    label="Total contribution amount"
+    label="yearly contribution amount"
 )
 
 plt.xlabel("Year")
 #y axis unit: millions of USD
-plt.ylabel("Amount contributed to OSS projects (M USD)")
+plt.ylabel("Contribution amount in millions (USD)")
 plt.gca().yaxis.set_major_formatter(lambda x, _: f"{x/1e6:.1f}")
 
 #plt.title("Yearly amount of money contributed to open-source projects")
