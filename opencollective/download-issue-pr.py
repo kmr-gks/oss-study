@@ -1,4 +1,3 @@
-import os
 import time
 import json
 import api
@@ -434,10 +433,11 @@ for idx, row in enumerate(df_collectives.itertuples(index=False), start=1):
             "repo_name": row.repo_name,
             "error": str(e),
         })
-
-    # GitHub APIに優しくするための短い待機
-    time.sleep(0.2)
-
+    
+    if idx % 10 == 0:
+        #save temp CSV every 10 repos
+        df_items_temp = pd.DataFrame(all_rows)
+        df_items_temp.to_csv("github_temp_issue_pr_items.csv", index=False)
 
 df_items = pd.DataFrame(all_rows)
 df_failed = pd.DataFrame(failed_repos)
