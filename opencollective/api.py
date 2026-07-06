@@ -30,6 +30,32 @@ def load_token_from_credentials(file_path=None, service=None):
 
     return token.strip()
 
+def load_github_token_from_credentials(file_path=None, service=None):
+    """
+    credentials.json から GitHub トークンを読み込む。
+    {
+      "github_token": { "token": "xxxxx" }
+    }
+    の形式を想定。
+    """
+    if file_path is None:
+        parent_dir = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(parent_dir, "credentials.json")
+    if service is None:
+        service = "github_token"
+    with open(file_path, "r", encoding="utf-8") as f:
+        creds = json.load(f)
+
+    try:
+        token = creds[service]["token"]
+    except KeyError:
+        raise KeyError(f"credentials.json 内に {service} の token が見つかりません。")
+
+    if not token:
+        raise ValueError(f"{service} の token が空です。")
+
+    return token.strip()
+
 def load_sql_password_from_credentials(file_path=None, service=None):
     """
     credentials.json からデータベースのパスワードを読み込む。
@@ -43,7 +69,6 @@ def load_sql_password_from_credentials(file_path=None, service=None):
         file_path = os.path.join(parent_dir, "credentials.json")
     if service is None:
         service = "postgresql"
-    print(f"Loading SQL password for service '{service}' from {file_path}")
     with open(file_path, "r", encoding="utf-8") as f:
         creds = json.load(f)
 
