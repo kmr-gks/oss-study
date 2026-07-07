@@ -295,13 +295,6 @@ query($owner: String!, $repo: String!, $cursor: String) {
             email
           }
         }
-        closedBy {
-          login
-          url
-          ... on User {
-            email
-          }
-        }
         mergedBy {
           login
           url
@@ -312,6 +305,24 @@ query($owner: String!, $repo: String!, $cursor: String) {
         labels(first: 20) {
           nodes {
             name
+          }
+        }
+        timelineItems(
+          first: 20,
+          itemTypes: [CLOSED_EVENT]
+        ) {
+          nodes {
+            __typename
+            ... on ClosedEvent {
+              createdAt
+              actor {
+                login
+                url
+                ... on User {
+                  email
+                }
+              }
+            }
           }
         }
       }
@@ -415,12 +426,12 @@ def fetch_issues_for_repo(owner, repo):
 
         for node in nodes:
             author_info = actor_to_dict(node.get("author"), "author")
-        
+
             closed_actor = get_last_closed_event_actor(
                 node.get("timelineItems")
             )
             closed_by_info = actor_to_dict(closed_actor, "closed_by")
-        
+
             row = {
                 "item_type": "issue",
                 "number": node.get("number"),
@@ -436,10 +447,10 @@ def fetch_issues_for_repo(owner, repo):
                 "merged_by_email": None,
                 "merged_by_url": None,
             }
-        
+
             row.update(author_info)
             row.update(closed_by_info)
-        
+
             rows.append(row)
 
         rate = result["data"].get("rateLimit", {})
@@ -488,12 +499,16 @@ def fetch_pull_requests_for_repo(owner, repo):
 
         for node in nodes:
             author_info = actor_to_dict(node.get("author"), "author")
-            closed_by_info = actor_to_dict(node.get("closedBy"), "closed_by")
+
+            closed_actor = get_last_closed_event_actor(
+                node.get("timelineItems")
+            )
+            closed_by_info = actor_to_dict(closed_actor, "closed_by")
+
             merged_by_info = actor_to_dict(node.get("mergedBy"), "merged_by")
 
             state = str(node.get("state")).lower() if node.get("state") else None
 
-            # GraphQLのstateは open/closed だが、merged=trueなら分析上 merged にしておく
             if node.get("merged"):
                 state_for_analysis = "merged"
             else:
