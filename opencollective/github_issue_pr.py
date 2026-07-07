@@ -49,6 +49,7 @@ engine = create_engine(
 
 # =========================
 # 1. Open Collective登録プロジェクトを取得
+#    ただし、commit_history に存在するリポジトリだけを対象にする
 # =========================
 
 query_collectives = """
@@ -63,7 +64,19 @@ FROM public.collectives
 WHERE github_account IS NOT NULL
 """
 
+query_commit_repos = """
+SELECT DISTINCT
+    repo_name
+FROM public.commit_history
+WHERE repo_name IS NOT NULL
+"""
+
 df_collectives = pd.read_sql(query_collectives, engine)
+df_commit_repos = pd.read_sql(query_commit_repos, engine)
+
+# -------------------------
+# collectives 側の前処理
+# -------------------------
 
 df_collectives = df_collectives[
     df_collectives["github_account"].notna()
@@ -106,8 +119,39 @@ df_collectives = df_collectives[
     & (df_collectives["repo"] != "")
 ].copy()
 
-# 同じ GitHub repo が複数 collectives に紐づく場合に備えて、一旦そのまま残す
-# 必要ならここで drop_duplicates してもよい
+# -------------------------
+# commit_history 側の前処理
+# -------------------------
+
+df_commit_repos["repo_name"] = (
+    df_commit_repos["repo_name"]
+    .str.strip()
+)
+
+commit_repo_set = set(df_commit_repos["repo_name"].dropna().unique())
+
+# -------------------------
+# commit_history に存在するリポジトリだけ残す
+# -------------------------
+
+n_before_filter = len(df_collectives)
+unique_before_filter = df_collectives["repo_name"].nunique()
+
+df_collectives = df_collectives[
+    df_collectives["repo_name"].isin(commit_repo_set)
+].copy()
+
+n_after_filter = len(df_collectives)
+unique_after_filter = df_collectives["repo_name"].nunique()
+
+print("===== Repository filtering by commit_history =====")
+print("Collectives with owner/repo:", n_before_filter)
+print("Unique repos before filtering:", unique_before_filter)
+print("Repos in commit_history:", len(commit_repo_set))
+print("Collectives matched with commit_history:", n_after_filter)
+print("Unique repos matched with commit_history:", unique_after_filter)
+print("Match rate among collectives:", n_after_filter / n_before_filter)
+
 if MAX_REPOS is not None:
     df_collectives = df_collectives.head(MAX_REPOS).copy()
 

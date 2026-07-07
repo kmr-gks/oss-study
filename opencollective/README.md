@@ -97,7 +97,7 @@ python .\rq1_labeling_1784samples.py
 rq2_impact_of_joining_openc.py
 rq2_monthly_commit_activity.py
 
-python github-issue-pr.py  
+python github_issue_pr.py  
 ```
 
 ## ファイル構成
