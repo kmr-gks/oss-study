@@ -4,7 +4,7 @@ import api
 import requests
 import pandas as pd
 import numpy as np
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 import api
 
 
@@ -46,6 +46,57 @@ engine = create_engine(
     f"postgresql+psycopg2://postgres:{api.load_sql_password_from_credentials()}@localhost:5432/{DB_NAME}"
 )
 
+
+def create_github_issue_pr_tables(engine):
+    create_items_table_sql = """
+    CREATE TABLE IF NOT EXISTS public.github_issue_pr_items (
+        collective_id TEXT,
+        project_slug TEXT,
+        project_name TEXT,
+        repo_name TEXT NOT NULL,
+        github_account TEXT NOT NULL,
+
+        item_type TEXT NOT NULL,
+        number INTEGER NOT NULL,
+        title TEXT,
+
+        created_at TIMESTAMP,
+        closed_at TIMESTAMP,
+        merged_at TIMESTAMP,
+
+        state TEXT,
+        is_merged BOOLEAN,
+        labels TEXT,
+
+        author_login TEXT,
+        author_email TEXT,
+        author_url TEXT,
+
+        closed_by_login TEXT,
+        closed_by_email TEXT,
+        closed_by_url TEXT,
+
+        merged_by_login TEXT,
+        merged_by_email TEXT,
+        merged_by_url TEXT,
+
+        url TEXT,
+
+        opencollective_created_at TIMESTAMP,
+        relative_month INTEGER,
+        period TEXT,
+
+        fetched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+        PRIMARY KEY (repo_name, item_type, number)
+    );
+    """
+
+    with engine.begin() as conn:
+        conn.execute(text(create_items_table_sql))
+
+    print("Tables are ready.")
+create_github_issue_pr_tables(engine)
 
 # =========================
 # 1. Open Collective登録プロジェクトを取得
@@ -458,7 +509,7 @@ def fetch_issues_for_repo(owner, repo):
         cost = rate.get("cost")
         reset_at = rate.get("resetAt")
 
-        print(f"    issues fetched: {len(rows)}, cost: {cost}, remaining: {remaining}, resetAt: {reset_at}")
+        print(f"    issues fetched: {len(rows)}, cost: {cost}, remaining: {remaining}, resetAt: {reset_at}\r", end="")
 
         if remaining is not None and remaining < 100:
             print("    Rate limit remaining is low. Sleep 60 seconds.")
@@ -537,7 +588,7 @@ def fetch_pull_requests_for_repo(owner, repo):
         cost = rate.get("cost")
         reset_at = rate.get("resetAt")
 
-        print(f"    pull requests fetched: {len(rows)}, cost: {cost}, remaining: {remaining}, resetAt: {reset_at}")
+        print(f"    pull requests fetched: {len(rows)}, cost: {cost}, remaining: {remaining}, resetAt: {reset_at}\r", end="")
 
         if remaining is not None and remaining < 100:
             print("    Rate limit remaining is low. Sleep 60 seconds.")
@@ -553,121 +604,48 @@ def fetch_pull_requests_for_repo(owner, repo):
     return rows
 
 
-# =========================
-# 5. 全リポジトリから取得
-# =========================
+def normalize_datetime_columns(df):
+    datetime_cols = [
+        "created_at",
+        "closed_at",
+        "merged_at",
+        "opencollective_created_at",
+    ]
 
-all_rows = []
-failed_repos = []
+    for col in datetime_cols:
+        if col in df.columns:
+            df[col] = pd.to_datetime(
+                df[col],
+                utc=True,
+                errors="coerce"
+            ).dt.tz_convert(None)
 
-for idx, row in enumerate(df_collectives.itertuples(index=False), start=1):
-    owner = row.owner
-    repo = row.repo
-
-    print(f"\n[{idx}/{len(df_collectives)}] Fetching {owner}/{repo}")
-
-    try:
-        issue_rows = fetch_issues_for_repo(owner, repo)
-        pr_rows = fetch_pull_requests_for_repo(owner, repo)
-
-        repo_rows = issue_rows + pr_rows
-
-        for item in repo_rows:
-            item["collective_id"] = row.id
-            item["project_slug"] = row.slug
-            item["project_name"] = row.name
-            item["github_account"] = row.github_account
-            item["repo_name"] = row.repo_name
-            item["opencollective_created_at"] = row.opencollective_created_at
-
-        all_rows.extend(repo_rows)
-
-        print(f"  total items for repo: {len(repo_rows)}")
-
-    except Exception as e:
-        print(f"  Failed: {owner}/{repo}")
-        print(f"  Error: {e}")
-
-        failed_repos.append({
-            "collective_id": row.id,
-            "project_slug": row.slug,
-            "project_name": row.name,
-            "github_account": row.github_account,
-            "repo_name": row.repo_name,
-            "error": str(e),
-        })
-    
-    if idx % 10 == 0:
-        #save temp CSV every 10 repos
-        df_items_temp = pd.DataFrame(all_rows)
-        df_items_temp.to_csv("github_temp_issue_pr_items.csv", index=False)
-
-df_items = pd.DataFrame(all_rows)
-df_failed = pd.DataFrame(failed_repos)
-
-print("\n===== Fetch finished =====")
-print("Fetched item rows:", len(df_items))
-print("Failed repos:", len(df_failed))
+    return df
 
 
-# =========================
-# 6. item-level CSV整形
-# =========================
+def save_repo_items_to_db(engine, repo_rows):
+    if not repo_rows:
+        return 0
 
-if len(df_items) > 0:
-    df_items["created_at"] = pd.to_datetime(
-        df_items["created_at"],
-        utc=True,
-        errors="coerce"
-    ).dt.tz_convert(None)
+    df_repo = pd.DataFrame(repo_rows)
 
-    df_items["closed_at"] = pd.to_datetime(
-        df_items["closed_at"],
-        utc=True,
-        errors="coerce"
-    ).dt.tz_convert(None)
+    df_repo = normalize_datetime_columns(df_repo)
 
-    df_items["merged_at"] = pd.to_datetime(
-        df_items["merged_at"],
-        utc=True,
-        errors="coerce"
-    ).dt.tz_convert(None)
-
-    df_items["opencollective_created_at"] = pd.to_datetime(
-        df_items["opencollective_created_at"],
-        errors="coerce"
-    )
-
-    # Open Collective登録日から見た相対月
-    # 例:
-    # -1 = 登録日前1か月
-    #  0 = 登録日から1か月後まで
-    #  1 = 登録後2か月目
-    df_items["relative_month"] = (
-        (df_items["created_at"].dt.year - df_items["opencollective_created_at"].dt.year) * 12
-        + (df_items["created_at"].dt.month - df_items["opencollective_created_at"].dt.month)
-    )
-
-    # 月境界を厳密に登録日基準で扱いたい場合は、後段のmonthly集計でDateOffsetを使う
-    df_items["period"] = np.where(
-        df_items["created_at"] < df_items["opencollective_created_at"],
-        "before",
-        "after"
-    )
-
-    # 列順
-    item_cols = [
+    required_cols = [
         "collective_id",
         "project_slug",
         "project_name",
         "repo_name",
         "github_account",
+
         "item_type",
         "number",
         "title",
+
         "created_at",
         "closed_at",
         "merged_at",
+
         "state",
         "is_merged",
         "labels",
@@ -690,17 +668,233 @@ if len(df_items) > 0:
         "period",
     ]
 
-    df_items = df_items[item_cols].copy()
+    for col in required_cols:
+        if col not in df_repo.columns:
+            df_repo[col] = None
 
-    df_items.to_csv(OUTPUT_ITEMS_CSV, index=False)
+    df_repo = df_repo[required_cols].copy()
 
-else:
-    print("No item rows fetched. Skip item CSV.")
+    insert_sql = text("""
+        INSERT INTO public.github_issue_pr_items (
+            collective_id,
+            project_slug,
+            project_name,
+            repo_name,
+            github_account,
+
+            item_type,
+            number,
+            title,
+
+            created_at,
+            closed_at,
+            merged_at,
+
+            state,
+            is_merged,
+            labels,
+
+            author_login,
+            author_email,
+            author_url,
+
+            closed_by_login,
+            closed_by_email,
+            closed_by_url,
+
+            merged_by_login,
+            merged_by_email,
+            merged_by_url,
+
+            url,
+            opencollective_created_at,
+            relative_month,
+            period
+        )
+        VALUES (
+            :collective_id,
+            :project_slug,
+            :project_name,
+            :repo_name,
+            :github_account,
+
+            :item_type,
+            :number,
+            :title,
+
+            :created_at,
+            :closed_at,
+            :merged_at,
+
+            :state,
+            :is_merged,
+            :labels,
+
+            :author_login,
+            :author_email,
+            :author_url,
+
+            :closed_by_login,
+            :closed_by_email,
+            :closed_by_url,
+
+            :merged_by_login,
+            :merged_by_email,
+            :merged_by_url,
+
+            :url,
+            :opencollective_created_at,
+            :relative_month,
+            :period
+        )
+        ON CONFLICT (repo_name, item_type, number)
+        DO UPDATE SET
+            collective_id = EXCLUDED.collective_id,
+            project_slug = EXCLUDED.project_slug,
+            project_name = EXCLUDED.project_name,
+            github_account = EXCLUDED.github_account,
+
+            title = EXCLUDED.title,
+
+            created_at = EXCLUDED.created_at,
+            closed_at = EXCLUDED.closed_at,
+            merged_at = EXCLUDED.merged_at,
+
+            state = EXCLUDED.state,
+            is_merged = EXCLUDED.is_merged,
+            labels = EXCLUDED.labels,
+
+            author_login = EXCLUDED.author_login,
+            author_email = EXCLUDED.author_email,
+            author_url = EXCLUDED.author_url,
+
+            closed_by_login = EXCLUDED.closed_by_login,
+            closed_by_email = EXCLUDED.closed_by_email,
+            closed_by_url = EXCLUDED.closed_by_url,
+
+            merged_by_login = EXCLUDED.merged_by_login,
+            merged_by_email = EXCLUDED.merged_by_email,
+            merged_by_url = EXCLUDED.merged_by_url,
+
+            url = EXCLUDED.url,
+            opencollective_created_at = EXCLUDED.opencollective_created_at,
+            relative_month = EXCLUDED.relative_month,
+            period = EXCLUDED.period,
+            fetched_at = CURRENT_TIMESTAMP
+    """)
+
+    records = df_repo.replace({np.nan: None}).to_dict(orient="records")
+
+    # ここが重要:
+    # engine.begin() のブロック単位で transaction が張られ、
+    # ブロックを抜けると commit される
+    with engine.begin() as conn:
+        conn.execute(insert_sql, records)
+
+    return len(records)
 
 
-if len(df_failed) > 0:
-    df_failed.to_csv(OUTPUT_FAILED_REPOS_CSV, index=False)
+# =========================
+# 5. 全リポジトリから取得して、1リポジトリごとにDB保存
+# =========================
+total_saved_rows = 0
+failed_count = 0
 
+for idx, row in enumerate(df_collectives.itertuples(index=False), start=1):
+    owner = row.owner
+    repo = row.repo
+    repo_name = row.repo_name
+
+    print(f"\n[{idx}/{len(df_collectives)}] Fetching {owner}/{repo}")
+
+    try:
+        issue_rows = fetch_issues_for_repo(owner, repo)
+        pr_rows = fetch_pull_requests_for_repo(owner, repo)
+
+        repo_rows = issue_rows + pr_rows
+
+        for item in repo_rows:
+            item["collective_id"] = str(row.id)
+            item["project_slug"] = row.slug
+            item["project_name"] = row.name
+            item["github_account"] = row.github_account
+            item["repo_name"] = row.repo_name
+            item["opencollective_created_at"] = row.opencollective_created_at
+
+            created_at = pd.to_datetime(
+                item.get("created_at"),
+                utc=True,
+                errors="coerce"
+            )
+
+            oc_created_at = pd.to_datetime(
+                row.opencollective_created_at,
+                utc=True,
+                errors="coerce"
+            )
+
+            if pd.notna(created_at) and pd.notna(oc_created_at):
+                created_at_naive = created_at.tz_convert(None)
+                oc_created_at_naive = oc_created_at.tz_convert(None)
+
+                item["relative_month"] = (
+                    (created_at_naive.year - oc_created_at_naive.year) * 12
+                    + (created_at_naive.month - oc_created_at_naive.month)
+                )
+
+                item["period"] = (
+                    "before"
+                    if created_at_naive < oc_created_at_naive
+                    else "after"
+                )
+            else:
+                item["relative_month"] = None
+                item["period"] = None
+
+        saved_rows = save_repo_items_to_db(engine, repo_rows)
+        total_saved_rows += saved_rows
+
+        print(f"  saved rows for repo: {saved_rows}")
+        print(f"  total saved rows so far: {total_saved_rows}")
+
+    except Exception as e:
+        print(f"  Failed: {owner}/{repo}")
+        print(f"  Error: {e}")
+
+        failed_row = {
+            "collective_id": str(row.id),
+            "project_slug": row.slug,
+            "project_name": row.name,
+            "github_account": row.github_account,
+            "repo_name": row.repo_name,
+            "error": str(e),
+        }
+        failed_count += 1
+
+print("\n===== Fetch finished =====")
+print("Total saved rows:", total_saved_rows)
+print("Failed repos:", failed_count)
+
+
+df_items = pd.read_sql(
+    """
+    SELECT *
+    FROM public.github_issue_pr_items
+    WHERE relative_month BETWEEN -12 AND 11
+    """,
+    engine
+)
+
+df_monthly = (
+    df_items
+    .groupby(["project_slug", "repo_name", "relative_month", "period"])
+    .agg(
+        opened_issues=("item_type", lambda s: (s == "issue").sum()),
+        opened_pull_requests=("item_type", lambda s: (s == "pull_request").sum()),
+        merged_pull_requests=("is_merged", "sum"),
+    )
+    .reset_index()
+)
 
 # =========================
 # 7. Open Collective登録前後12か月の月次集計
@@ -788,9 +982,6 @@ if len(df_items) > 0:
     print("\nSaved:")
     print(OUTPUT_ITEMS_CSV)
     print(OUTPUT_MONTHLY_CSV)
-
-    if len(df_failed) > 0:
-        print(OUTPUT_FAILED_REPOS_CSV)
 
     print("\n===== Monthly summary preview =====")
     summary = (
