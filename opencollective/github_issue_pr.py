@@ -232,10 +232,32 @@ query($owner: String!, $repo: String!, $cursor: String) {
         url
         author {
           login
+          url
+          ... on User {
+            email
+          }
         }
         labels(first: 20) {
           nodes {
             name
+          }
+        }
+        timelineItems(
+          first: 20,
+          itemTypes: [CLOSED_EVENT]
+        ) {
+          nodes {
+            __typename
+            ... on ClosedEvent {
+              createdAt
+              actor {
+                login
+                url
+                ... on User {
+                  email
+                }
+              }
+            }
           }
         }
       }
@@ -268,6 +290,24 @@ query($owner: String!, $repo: String!, $cursor: String) {
         url
         author {
           login
+          url
+          ... on User {
+            email
+          }
+        }
+        closedBy {
+          login
+          url
+          ... on User {
+            email
+          }
+        }
+        mergedBy {
+          login
+          url
+          ... on User {
+            email
+          }
         }
         labels(first: 20) {
           nodes {
@@ -304,6 +344,52 @@ def labels_to_string(label_connection):
     return ";".join(labels)
 
 
+def get_last_closed_event_actor(timeline_items):
+    """
+    timelineItems から最後の ClosedEvent の actor を取り出す。
+    Issue/PR は reopen -> close があり得るため、最後の close を使う。
+    """
+    if not timeline_items:
+        return None
+
+    nodes = timeline_items.get("nodes") or []
+
+    closed_events = [
+        node for node in nodes
+        if node and node.get("__typename") == "ClosedEvent"
+    ]
+
+    if not closed_events:
+        return None
+
+    closed_events = sorted(
+        closed_events,
+        key=lambda x: x.get("createdAt") or ""
+    )
+
+    return closed_events[-1].get("actor")
+
+
+def actor_to_dict(actor, prefix):
+    """
+    GitHub GraphQL の Actor/User 情報を平坦なdictにする。
+    email は User の公開メールアドレスがある場合のみ入る。
+    Bot や Mannequin などでは email が存在しないことがある。
+    """
+    if not actor:
+        return {
+            f"{prefix}_login": None,
+            f"{prefix}_email": None,
+            f"{prefix}_url": None,
+        }
+
+    return {
+        f"{prefix}_login": actor.get("login"),
+        f"{prefix}_email": actor.get("email"),
+        f"{prefix}_url": actor.get("url"),
+    }
+
+
 def fetch_issues_for_repo(owner, repo):
     rows = []
     cursor = None
@@ -328,9 +414,14 @@ def fetch_issues_for_repo(owner, repo):
         nodes = issues["nodes"]
 
         for node in nodes:
-            author = node.get("author") or {}
-
-            rows.append({
+            author_info = actor_to_dict(node.get("author"), "author")
+        
+            closed_actor = get_last_closed_event_actor(
+                node.get("timelineItems")
+            )
+            closed_by_info = actor_to_dict(closed_actor, "closed_by")
+        
+            row = {
                 "item_type": "issue",
                 "number": node.get("number"),
                 "title": node.get("title"),
@@ -340,9 +431,16 @@ def fetch_issues_for_repo(owner, repo):
                 "state": str(node.get("state")).lower() if node.get("state") else None,
                 "is_merged": False,
                 "labels": labels_to_string(node.get("labels")),
-                "author_login": author.get("login"),
                 "url": node.get("url"),
-            })
+                "merged_by_login": None,
+                "merged_by_email": None,
+                "merged_by_url": None,
+            }
+        
+            row.update(author_info)
+            row.update(closed_by_info)
+        
+            rows.append(row)
 
         rate = result["data"].get("rateLimit", {})
         remaining = rate.get("remaining")
@@ -389,7 +487,9 @@ def fetch_pull_requests_for_repo(owner, repo):
         nodes = prs["nodes"]
 
         for node in nodes:
-            author = node.get("author") or {}
+            author_info = actor_to_dict(node.get("author"), "author")
+            closed_by_info = actor_to_dict(node.get("closedBy"), "closed_by")
+            merged_by_info = actor_to_dict(node.get("mergedBy"), "merged_by")
 
             state = str(node.get("state")).lower() if node.get("state") else None
 
@@ -399,7 +499,7 @@ def fetch_pull_requests_for_repo(owner, repo):
             else:
                 state_for_analysis = state
 
-            rows.append({
+            row = {
                 "item_type": "pull_request",
                 "number": node.get("number"),
                 "title": node.get("title"),
@@ -409,9 +509,13 @@ def fetch_pull_requests_for_repo(owner, repo):
                 "state": state_for_analysis,
                 "is_merged": bool(node.get("merged")),
                 "labels": labels_to_string(node.get("labels")),
-                "author_login": author.get("login"),
                 "url": node.get("url"),
-            })
+            }
+
+            row.update(author_info)
+            row.update(closed_by_info)
+            row.update(merged_by_info)
+            rows.append(row)
 
         rate = result["data"].get("rateLimit", {})
         remaining = rate.get("remaining")
@@ -552,7 +656,19 @@ if len(df_items) > 0:
         "state",
         "is_merged",
         "labels",
+
         "author_login",
+        "author_email",
+        "author_url",
+
+        "closed_by_login",
+        "closed_by_email",
+        "closed_by_url",
+
+        "merged_by_login",
+        "merged_by_email",
+        "merged_by_url",
+
         "url",
         "opencollective_created_at",
         "relative_month",
