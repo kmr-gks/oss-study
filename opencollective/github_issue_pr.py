@@ -511,7 +511,7 @@ def fetch_issues_for_repo(owner, repo):
 
         print(f"    issues fetched: {len(rows)}, cost: {cost}, remaining: {remaining}, resetAt: {reset_at}\r", end="")
 
-        if remaining is not None and remaining < 100:
+        if remaining is not None and remaining < 10:
             print("    Rate limit remaining is low. Sleep 60 seconds.")
             time.sleep(60)
 
@@ -590,7 +590,7 @@ def fetch_pull_requests_for_repo(owner, repo):
 
         print(f"    pull requests fetched: {len(rows)}, cost: {cost}, remaining: {remaining}, resetAt: {reset_at}\r", end="")
 
-        if remaining is not None and remaining < 100:
+        if remaining is not None and remaining < 10:
             print("    Rate limit remaining is low. Sleep 60 seconds.")
             time.sleep(60)
 
