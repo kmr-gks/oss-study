@@ -97,7 +97,8 @@ python .\rq1_labeling_1784samples.py
 rq2_impact_of_joining_openc.py
 rq2_monthly_commit_activity.py
 
-python github_issue_pr.py  
+#Mine issue and pr data. You can run in parallel by changing args(from, to)
+python github_issue_pr.py 1 999999
 ```
 
 ## ファイル構成

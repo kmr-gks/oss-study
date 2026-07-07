@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 from sqlalchemy import create_engine, text
 import api
+import sys
 
 
 # =========================
@@ -214,7 +215,7 @@ print("Unique GitHub repos:", df_collectives["github_account"].nunique())
 # 2. GraphQL API helper
 # =========================
 
-def run_graphql_query(query, variables, max_retries=5):
+def run_graphql_query(query, variables, max_retries=500):
     """
     GitHub GraphQL APIを実行する。
     rate limitや一時的なエラーに対して簡単にリトライする。
@@ -250,8 +251,18 @@ def run_graphql_query(query, variables, max_retries=5):
 
         result = response.json()
 
+        if "graphql_rate_limit" in result:
+            print("GraphQL rate limit exceeded. Sleep and retry.")
+            time.sleep(10*attempt)
+            continue
+
         if "errors" in result:
             # repoが存在しない、名前変更、権限なしなどもここに来ることがある
+            print(f"other GraphQL errors: {result['errors'][0]}")
+            if result['errors'][0]['type'] == 'RATE_LIMIT':
+                print("Rate limit exceeded. Sleep and retry.")
+                time.sleep(10*(attempt+1))
+                continue
             return result
 
         return result
@@ -511,10 +522,6 @@ def fetch_issues_for_repo(owner, repo):
 
         print(f"    issues fetched: {len(rows)}, cost: {cost}, remaining: {remaining}, resetAt: {reset_at}\r", end="")
 
-        if remaining is not None and remaining < 10:
-            print("    Rate limit remaining is low. Sleep 60 seconds.")
-            time.sleep(60)
-
         page_info = issues["pageInfo"]
 
         if not page_info["hasNextPage"]:
@@ -590,9 +597,6 @@ def fetch_pull_requests_for_repo(owner, repo):
 
         print(f"    pull requests fetched: {len(rows)}, cost: {cost}, remaining: {remaining}, resetAt: {reset_at}\r", end="")
 
-        if remaining is not None and remaining < 10:
-            print("    Rate limit remaining is low. Sleep 60 seconds.")
-            time.sleep(60)
 
         page_info = prs["pageInfo"]
 
@@ -799,13 +803,17 @@ def save_repo_items_to_db(engine, repo_rows):
 # =========================
 total_saved_rows = 0
 failed_count = 0
+from_idx, to_idx = int(sys.argv[1]), int(sys.argv[2])
 
 for idx, row in enumerate(df_collectives.itertuples(index=False), start=1):
     owner = row.owner
     repo = row.repo
     repo_name = row.repo_name
 
-    print(f"\n[{idx}/{len(df_collectives)}] Fetching {owner}/{repo}")
+    if idx < from_idx or idx > to_idx:
+        continue
+
+    print(f"\n[{idx}/{len(df_collectives)}]({from_idx}~{to_idx}) Fetching {owner}/{repo}")
 
     try:
         issue_rows = fetch_issues_for_repo(owner, repo)
@@ -854,8 +862,8 @@ for idx, row in enumerate(df_collectives.itertuples(index=False), start=1):
         saved_rows = save_repo_items_to_db(engine, repo_rows)
         total_saved_rows += saved_rows
 
-        print(f"  saved rows for repo: {saved_rows}")
-        print(f"  total saved rows so far: {total_saved_rows}")
+        print(f"  saved rows for repo: {saved_rows}.")
+        print(f"  total saved rows so far: {total_saved_rows}.")
 
     except Exception as e:
         print(f"  Failed: {owner}/{repo}")
