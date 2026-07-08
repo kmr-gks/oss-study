@@ -239,7 +239,10 @@ def run_graphql_query(query, variables, max_retries=500):
             continue
 
         if response.status_code == 403:
-            print("403 Forbidden. Response:")
+            if "rate limit" in str(response.text):
+                print(f"Rate limit exceeded. Sleep for {10*(attempt+1)}s and retry.\r")
+                time.sleep(10*(attempt+1))
+                continue
             print(response.text)
             raise RuntimeError("GitHub API 403 Forbidden. Rate limit or permission issue may have occurred.")
 
@@ -251,16 +254,11 @@ def run_graphql_query(query, variables, max_retries=500):
 
         result = response.json()
 
-        if "graphql_rate_limit" in result:
-            print("GraphQL rate limit exceeded. Sleep and retry.")
-            time.sleep(10*attempt)
-            continue
-
         if "errors" in result:
             # repoが存在しない、名前変更、権限なしなどもここに来ることがある
             print(f"other GraphQL errors: {result['errors'][0]}")
             if result['errors'][0]['type'] == 'RATE_LIMIT':
-                print("Rate limit exceeded. Sleep and retry.")
+                print(f"Rate limit exceeded. Sleep for {10*(attempt+1)}s and retry.\r")
                 time.sleep(10*(attempt+1))
                 continue
             return result
@@ -798,6 +796,20 @@ def save_repo_items_to_db(engine, repo_rows):
     return len(records)
 
 
+def get_already_fetched_repos(engine):
+    query = """
+    SELECT DISTINCT repo_name
+    FROM public.github_issue_pr_items
+    WHERE repo_name IS NOT NULL
+    """
+
+    try:
+        df = pd.read_sql(query, engine)
+        return set(df["repo_name"].dropna().astype(str))
+    except Exception:
+        return set()
+
+
 # =========================
 # 5. 全リポジトリから取得して、1リポジトリごとにDB保存
 # =========================
@@ -805,12 +817,16 @@ total_saved_rows = 0
 failed_count = 0
 from_idx, to_idx = int(sys.argv[1]), int(sys.argv[2])
 
+already_fetched_repos = set()
+already_fetched_repos = get_already_fetched_repos(engine)
+print("Already fetched repos:", len(already_fetched_repos))
+
 for idx, row in enumerate(df_collectives.itertuples(index=False), start=1):
     owner = row.owner
     repo = row.repo
     repo_name = row.repo_name
 
-    if idx < from_idx or idx > to_idx:
+    if  repo_name in already_fetched_repos or idx < from_idx or idx > to_idx:
         continue
 
     print(f"\n[{idx}/{len(df_collectives)}]({from_idx}~{to_idx}) Fetching {owner}/{repo}")
