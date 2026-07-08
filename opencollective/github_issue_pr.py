@@ -231,41 +231,15 @@ def run_graphql_query(query, variables, max_retries=500):
             timeout=60,
         )
 
-        # GitHub側の二次制限や一時エラー対策
-        if response.status_code in [502, 503, 504]:
-            wait_sec = 10 * (attempt + 1)
-            print(f"Temporary server error {response.status_code}. Sleep {wait_sec}s and retry.\r", end="")
-            time.sleep(wait_sec)
+        if "rate limit" in str(response.text) or "error" in response.json():
+            print(f"GraphQL request failed. Rate limit exceeded. Sleep for {10*(attempt+1)}s and retry.\r", end="")
+            time.sleep(10*(attempt+1))
             continue
-
-        if response.status_code == 403:
-            if "rate limit" in str(response.text):
-                print(f"Rate limit exceeded. Sleep for {10*(attempt+1)}s and retry.\r", end="")
-                time.sleep(10*(attempt+1))
-                continue
-            print(response.text)
-            raise RuntimeError("GitHub API 403 Forbidden. Rate limit or permission issue may have occurred.")
-
-        if response.status_code != 200:
-            print("GraphQL request failed.")
-            print("Status code:", response.status_code)
-            print(response.text)
-            raise RuntimeError(f"GraphQL request failed with status code {response.status_code}")
-
-        result = response.json()
-
-        if "errors" in result:
-            # repoが存在しない、名前変更、権限なしなどもここに来ることがある
-            if result['errors'][0]['type'] == 'RATE_LIMIT':
-                print(f"Rate limit exceeded. Sleep for {10*(attempt+1)}s and retry.\r", end="")
-                time.sleep(10*(attempt+1))
-                continue
-            print(f"other GraphQL errors: {result['errors'][0]}")
-            return result
-
-        return result
-
-    raise RuntimeError("GraphQL request failed after retries.")
+        if response.status_code==200:
+            return response.json()
+        else:
+            print(f"GraphQL request failed. Status code: {response.status_code}.")
+    raise RuntimeError("Other error.")
 
 
 # =========================
