@@ -234,7 +234,7 @@ def run_graphql_query(query, variables, max_retries=500):
         # GitHub側の二次制限や一時エラー対策
         if response.status_code in [502, 503, 504]:
             wait_sec = 10 * (attempt + 1)
-            print(f"Temporary server error {response.status_code}. Sleep {wait_sec}s and retry.")
+            print(f"Temporary server error {response.status_code}. Sleep {wait_sec}s and retry.\r", end="")
             time.sleep(wait_sec)
             continue
 
