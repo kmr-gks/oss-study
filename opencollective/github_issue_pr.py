@@ -240,7 +240,7 @@ def run_graphql_query(query, variables, max_retries=500):
 
         if response.status_code == 403:
             if "rate limit" in str(response.text):
-                print(f"Rate limit exceeded. Sleep for {10*(attempt+1)}s and retry.\r")
+                print(f"Rate limit exceeded. Sleep for {10*(attempt+1)}s and retry.\r", end="")
                 time.sleep(10*(attempt+1))
                 continue
             print(response.text)
@@ -256,11 +256,11 @@ def run_graphql_query(query, variables, max_retries=500):
 
         if "errors" in result:
             # repoが存在しない、名前変更、権限なしなどもここに来ることがある
-            print(f"other GraphQL errors: {result['errors'][0]}")
             if result['errors'][0]['type'] == 'RATE_LIMIT':
-                print(f"Rate limit exceeded. Sleep for {10*(attempt+1)}s and retry.\r")
+                print(f"Rate limit exceeded. Sleep for {10*(attempt+1)}s and retry.\r", end="")
                 time.sleep(10*(attempt+1))
                 continue
+            print(f"other GraphQL errors: {result['errors'][0]}")
             return result
 
         return result
