@@ -99,6 +99,7 @@ rq2_monthly_commit_activity.py
 
 #Mine issue and pr data. You can run in parallel by changing args(from, to)
 python github_issue_pr.py 1 999999
+python github_issue_pr_fig.py
 ```
 
 ## ファイル構成
