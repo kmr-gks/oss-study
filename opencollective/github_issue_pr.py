@@ -231,7 +231,9 @@ def run_graphql_query(query, variables, max_retries=500):
             timeout=60,
         )
 
-        if "rate limit" in str(response.text) or "error" in response.json():
+        ERROR_TEXT="You have exceeded a secondary rate limit. Please wait a few minutes before you try again. For more on scraping GitHub and how it may affect your rights, please review our Terms of Service (https://docs.github.com/en/site-policy/github-terms/github-terms-of-service) If you reach out to GitHub Support for help, please include the request ID"
+
+        if ERROR_TEXT in str(response.text) or (response.json().get('errors') and response.json()['errors'][0]['type'] == 'RATE_LIMIT'):
             print(f"GraphQL request failed. Rate limit exceeded. Sleep for {10*(attempt+1)}s and retry.\r", end="")
             time.sleep(10*(attempt+1))
             continue
@@ -239,6 +241,7 @@ def run_graphql_query(query, variables, max_retries=500):
             return response.json()
         else:
             print(f"GraphQL request failed. Status code: {response.status_code}.")
+            print(f"Response text: {response.text}")
     raise RuntimeError("Other error.")
 
 
