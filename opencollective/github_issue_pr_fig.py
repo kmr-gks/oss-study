@@ -15,10 +15,11 @@ ITEM_TABLE = "public.github_issue_pr_items"
 OUTPUT_PROJECT_MONTHLY_CSV = "github_issue_pr_monthly_counts_project_level_from_sql.csv"
 OUTPUT_SUMMARY_CSV = "github_issue_pr_monthly_counts_summary_from_sql.csv"
 
-OUTPUT_FIG_ALL_PDF = "github_issue_pr_monthly_mean_around_opencollective.pdf"
 OUTPUT_FIG_OPENED_ISSUES_PDF = "github_opened_issues_monthly_around_opencollective.pdf"
 OUTPUT_FIG_OPENED_PRS_PDF = "github_opened_pull_requests_monthly_around_opencollective.pdf"
+OUTPUT_FIG_CLOSED_ISSUES_PDF = "github_closed_issues_monthly_around_opencollective.pdf"
 OUTPUT_FIG_MERGED_PRS_PDF = "github_merged_pull_requests_monthly_around_opencollective.pdf"
+OUTPUT_FIG_ALL_MEAN_MEDIAN_PDF = "github_issue_pr_monthly_all_mean_median_around_opencollective.pdf"
 
 RELATIVE_MONTHS = list(range(-12, 12))  # -12 ... -1, 0 ... 11
 
@@ -303,6 +304,15 @@ plot_mean_median(
 
 plot_mean_median(
     df_summary=df_summary,
+    mean_col="mean_closed_issues",
+    median_col="median_closed_issues",
+    ylabel="Monthly closed issue count",
+    title="Closed issues around Open Collective registration",
+    output_path=OUTPUT_FIG_CLOSED_ISSUES_PDF,
+)
+
+plot_mean_median(
+    df_summary=df_summary,
     mean_col="mean_opened_pull_requests",
     median_col="median_opened_pull_requests",
     ylabel="Monthly opened pull request count",
@@ -321,33 +331,79 @@ plot_mean_median(
 
 # =========================
 # 9. 1枚にまとめたグラフ
+#    4種類の指標 × mean/median = 8本の線
 # =========================
-# 平均だけを比較する。
-# コミット数グラフと同じ「山型」かを見る用途。
 
-plt.figure(figsize=(5.5, 3.8))
+plt.figure(figsize=(8.0, 4.8))
 
+# Issues: opened
 plt.plot(
     df_summary["plot_month"],
     df_summary["mean_opened_issues"],
     marker="o",
-    label="Opened issues"
+    label="Mean opened issues"
 )
 
+plt.plot(
+    df_summary["plot_month"],
+    df_summary["median_opened_issues"],
+    marker="o",
+    linestyle="--",
+    label="Median opened issues"
+)
+
+# Issues: closed
+plt.plot(
+    df_summary["plot_month"],
+    df_summary["mean_closed_issues"],
+    marker="s",
+    linestyle="-",
+    label="Mean closed issues"
+)
+
+plt.plot(
+    df_summary["plot_month"],
+    df_summary["median_closed_issues"],
+    marker="s",
+    linestyle="--",
+    label="Median closed issues"
+)
+
+# PRs: opened
 plt.plot(
     df_summary["plot_month"],
     df_summary["mean_opened_pull_requests"],
-    marker="o",
-    label="Opened PRs"
+    marker="^",
+    linestyle="-",
+    label="Mean opened PRs"
 )
 
 plt.plot(
     df_summary["plot_month"],
-    df_summary["mean_merged_pull_requests"],
-    marker="o",
-    label="Merged PRs"
+    df_summary["median_opened_pull_requests"],
+    marker="^",
+    linestyle="--",
+    label="Median opened PRs"
 )
 
+# PRs: merged
+plt.plot(
+    df_summary["plot_month"],
+    df_summary["mean_merged_pull_requests"],
+    marker="D",
+    linestyle="-",
+    label="Mean merged PRs"
+)
+
+plt.plot(
+    df_summary["plot_month"],
+    df_summary["median_merged_pull_requests"],
+    marker="D",
+    linestyle="--",
+    label="Median merged PRs"
+)
+
+# Open Collective 登録タイミング
 plt.axvline(x=0, linestyle="--", linewidth=1)
 
 plt.text(
@@ -365,12 +421,22 @@ plt.xlabel("Months before / after Open Collective registration")
 plt.ylabel("Monthly count")
 plt.title("Issue and pull request activity around Open Collective registration")
 
-plt.legend()
+plt.legend(
+    fontsize=8,
+    ncol=2,
+    loc="upper right"
+)
+
 plt.grid(True, alpha=0.3)
 plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True))
 
 plt.tight_layout()
-plt.savefig(OUTPUT_FIG_ALL_PDF, bbox_inches="tight")
+
+plt.savefig(
+    OUTPUT_FIG_ALL_MEAN_MEDIAN_PDF,
+    bbox_inches="tight"
+)
+
 plt.show()
 
-print("Saved figure:", OUTPUT_FIG_ALL_PDF)
+print("Saved figure:", OUTPUT_FIG_ALL_MEAN_MEDIAN_PDF)
