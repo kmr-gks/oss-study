@@ -7,6 +7,7 @@ import numpy as np
 from sqlalchemy import create_engine, text
 import api
 import sys
+import traceback
 
 
 # =========================
@@ -221,27 +222,41 @@ def run_graphql_query(query, variables, max_retries=500):
     rate limitや一時的なエラーに対して簡単にリトライする。
     """
     for attempt in range(max_retries):
-        response = requests.post(
-            GITHUB_GRAPHQL_URL,
-            headers=HEADERS,
-            json={
-                "query": query,
-                "variables": variables,
-            },
-            timeout=60,
-        )
+        try:
+            response = requests.post(
+                GITHUB_GRAPHQL_URL,
+                headers=HEADERS,
+                json={
+                    "query": query,
+                    "variables": variables,
+                },
+                timeout=60,
+            )
+        except Exception as e:
+            print(f"GraphQL requests.post failed. Exception: {e}. Sleep for {10*(attempt+1)}s and retry.\r", end="")
+            time.sleep(10*(attempt+1))
+            continue
 
         ERROR_TEXT="You have exceeded a secondary rate limit. Please wait a few minutes before you try again. For more on scraping GitHub and how it may affect your rights, please review our Terms of Service (https://docs.github.com/en/site-policy/github-terms/github-terms-of-service) If you reach out to GitHub Support for help, please include the request ID"
 
-        if ERROR_TEXT in str(response.text) or (response.json().get('errors') and response.json()['errors'][0]['type'] == 'RATE_LIMIT'):
-            print(f"GraphQL request failed. Rate limit exceeded. Sleep for {10*(attempt+1)}s and retry.\r", end="")
+        result={}
+        try:
+            result = response.json()
+        except Exception as e:
+            print(f"JSON decode error: {e}. Response text: {str(response.text)}")
+            time.sleep(10*(attempt+1))
+            continue
+
+        if ERROR_TEXT in str(response.text) or result.get('errors'):
+            print(f"Rate limit exceeded. Sleep for {10*(attempt+1)}s and retry.\r", end="")
             time.sleep(10*(attempt+1))
             continue
         if response.status_code==200:
-            return response.json()
+            return result
         else:
             print(f"GraphQL request failed. Status code: {response.status_code}.")
-            print(f"Response text: {response.text}")
+            print(f"Response text: {str(response.text)}")
+            continue
     raise RuntimeError("Other error.")
 
 
@@ -861,6 +876,7 @@ for idx, row in enumerate(df_collectives.itertuples(index=False), start=1):
     except Exception as e:
         print(f"  Failed: {owner}/{repo}")
         print(f"  Error: {e}")
+        traceback.print_exc()
 
         failed_row = {
             "collective_id": str(row.id),
