@@ -1,6 +1,9 @@
+from pathlib import Path
+import sys
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+import api
 import time
 import json
-import api
 import requests
 import pandas as pd
 import numpy as np
