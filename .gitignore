@@ -6,7 +6,7 @@ oldlogs/
 *.xlsx
 *.pdf
 *.png
-opencollective/__pycache__/
+__pycache__/
 opencollective/lib/
 opencollective/logs/
 opencollective/fig*
