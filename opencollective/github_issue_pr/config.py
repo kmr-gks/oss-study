@@ -13,6 +13,9 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # 分析対象指標
 METRICS = {
+    "commits": {
+        "label": "Commits",
+    },
     "opened_issues": {
         "label": "Opened issues",
         "date_column": "created_at",
@@ -48,33 +51,4 @@ AFTER_WINDOWS = [1, 3, 6, 12]
 ANALYSIS_WINDOWS = [3, 6, 9, 12]
 ALPHA = 0.05
 COMMIT_TABLE = "public.commit_history"
-METRICS = {
-    "commits": {
-        "label": "Commits",
-    },
-    "opened_issues": {
-        "label": "Opened issues",
-        "date_column": "created_at",
-        "item_type": "issue",
-    },
-    "closed_issues": {
-        "label": "Closed issues",
-        "date_column": "closed_at",
-        "item_type": "issue",
-    },
-    "opened_pull_requests": {
-        "label": "Opened pull requests",
-        "date_column": "created_at",
-        "item_type": "pull_request",
-    },
-    "closed_pull_requests": {
-        "label": "Closed pull requests",
-        "date_column": "closed_at",
-        "item_type": "pull_request",
-    },
-    "merged_pull_requests": {
-        "label": "Merged pull requests",
-        "date_column": "merged_at",
-        "item_type": "pull_request",
-    },
-}
+

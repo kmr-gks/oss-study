@@ -88,27 +88,61 @@ def plot_all_metrics(
 ):
     plt.figure(figsize=(9, 5.5))
 
-    markers = ["o", "s", "^", "v", "D"]
-
-    for marker, metric_name in zip(
-        markers,
-        METRICS.keys(),
-    ):
+    for metric_name in METRICS.keys():
         label = METRICS[metric_name]["label"]
 
         plt.plot(
             df_summary["plot_month"],
             df_summary[f"mean_{metric_name}"],
-            marker=marker,
-            linestyle="-",
+            marker=".",
+            linestyle="--",
             label=f"Mean {label}",
         )
 
         plt.plot(
             df_summary["plot_month"],
             df_summary[f"median_{metric_name}"],
-            marker=marker,
-            linestyle="--",
+            marker="o",
+            label=f"Median {label}",
+        )
+
+    add_registration_marker()
+    configure_month_axis()
+
+    plt.ylabel("Monthly count")
+    plt.legend(
+        fontsize=7,
+        ncol=2,
+    )
+    plt.tight_layout()
+
+    output_path = (
+        OUTPUT_DIR
+        / f"all_metrics_{output_suffix}.pdf"
+    )
+
+    plt.savefig(
+        output_path,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+    print("Saved figure:", output_path)
+
+
+def plot_all_metrics_median(
+    df_summary: pd.DataFrame,
+    output_suffix: str,
+):
+    plt.figure(figsize=(9, 5.5))
+
+    for metric_name in METRICS.keys():
+        label = METRICS[metric_name]["label"]
+
+        plt.plot(
+            df_summary["plot_month"],
+            df_summary[f"median_{metric_name}"],
+            marker="o",
             label=f"Median {label}",
         )
 

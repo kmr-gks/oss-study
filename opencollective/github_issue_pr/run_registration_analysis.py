@@ -22,6 +22,7 @@ from plotting import (
     plot_original_vs_excluding_top,
     plot_growth_rates,
     plot_growth_rate_boxplot,
+    plot_all_metrics_median,
 )
 from statistical_tests import test_before_after_windows
 
@@ -244,6 +245,11 @@ def main():
     plot_all_metrics(
         df_summary,
         "all_projects",
+    )
+
+    plot_all_metrics_median(
+        df_summary,
+        "all_projects_median",
     )
 
     plot_all_metrics(
