@@ -133,6 +133,7 @@ def main():
     )
 
     # 6. グラフ
+    """
     for metric_name in METRICS:
         plot_metric_mean_median(
             df_summary,
@@ -151,6 +152,7 @@ def main():
             df_summary_excluding_top,
             metric_name,
         )
+    """
 
     plot_all_metrics(
         df_summary,
