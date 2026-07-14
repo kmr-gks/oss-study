@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.ticker import MaxNLocator
 
-from config import METRICS, OUTPUT_DIR
+from config import ANALYSIS_WINDOWS, METRICS, OUTPUT_DIR
 
 
 def add_registration_marker():
@@ -178,6 +178,120 @@ def plot_original_vs_excluding_top(
     output_path = (
         OUTPUT_DIR
         / f"{metric_name}_top1_sensitivity.pdf"
+    )
+
+    plt.savefig(
+        output_path,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+    print("Saved figure:", output_path)
+
+
+def plot_growth_rates(
+    df_summary: pd.DataFrame,
+    statistic: str = "median",
+):
+    """
+    横軸: 前後比較期間（3, 6, 8, 12か月）
+    縦軸: 増加率（%）
+
+    statistic:
+        "median" または "mean"
+    """
+    if statistic not in {"mean", "median"}:
+        raise ValueError(
+            "statistic must be 'mean' or 'median'"
+        )
+
+    value_column = f"{statistic}_growth_rate_pct"
+
+    plt.figure(figsize=(6.5, 4.2))
+
+    for metric_name, metric_config in METRICS.items():
+        metric_data = (
+            df_summary[
+                df_summary["metric"].eq(metric_name)
+            ]
+            .sort_values("window_months")
+        )
+
+        plt.plot(
+            metric_data["window_months"],
+            metric_data[value_column],
+            marker="o",
+            label=metric_config["label"],
+        )
+
+    # 増減なしを示す基準線
+    plt.axhline(
+        y=0,
+        linestyle="--",
+        linewidth=1,
+    )
+
+    plt.xticks(ANALYSIS_WINDOWS)
+    plt.xlabel("Window size before and after registration (months)")
+    plt.ylabel(f"{statistic.capitalize()} growth rate (%)")
+
+    plt.grid(True, alpha=0.3)
+    plt.legend(fontsize=8)
+    plt.tight_layout()
+
+    output_path = (
+        OUTPUT_DIR
+        / f"{statistic}_growth_rate_by_window.pdf"
+    )
+
+    plt.savefig(
+        output_path,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+    print("Saved figure:", output_path)
+
+def plot_growth_rate_boxplot(
+    df_growth: pd.DataFrame,
+    metric_name: str,
+):
+    metric_data = df_growth[
+        df_growth["metric"].eq(metric_name)
+        & df_growth["growth_rate_pct"].notna()
+    ].copy()
+
+    boxplot_data = [
+        metric_data.loc[
+            metric_data["window_months"].eq(window),
+            "growth_rate_pct",
+        ].to_numpy()
+        for window in ANALYSIS_WINDOWS
+    ]
+
+    plt.figure(figsize=(5.5, 4))
+
+    plt.boxplot(
+        boxplot_data,
+        tick_labels=ANALYSIS_WINDOWS,
+        showfliers=False,
+    )
+
+    plt.axhline(
+        y=0,
+        linestyle="--",
+        linewidth=1,
+    )
+
+    plt.xlabel(
+        "Window size before and after registration (months)"
+    )
+    plt.ylabel("Growth rate (%)")
+    plt.tight_layout()
+
+    output_path = (
+        OUTPUT_DIR
+        / f"{metric_name}_growth_rate_boxplot.pdf"
     )
 
     plt.savefig(

@@ -10,10 +10,16 @@ from monthly_activity import (
     identify_top_activity_repositories,
     summarize_monthly_activity,
 )
+from growth_rate_analysis import (
+    calculate_growth_rates,
+    summarize_growth_rates,
+)
 from plotting import (
     plot_all_metrics,
     plot_metric_mean_median,
     plot_original_vs_excluding_top,
+    plot_growth_rates,
+    plot_growth_rate_boxplot,
 )
 from statistical_tests import test_before_after_windows
 
@@ -57,6 +63,44 @@ def main():
         df_summary,
         "registration_monthly_summary.csv",
     )
+    
+    # =========================================
+    # 前後3・6・8・12か月の増加率
+    # =========================================
+    
+    df_growth = calculate_growth_rates(
+        df_monthly
+    )
+    
+    df_growth_summary = summarize_growth_rates(
+        df_growth
+    )
+    
+    save_dataframe(
+        df_growth,
+        "registration_growth_rates_project_level.csv",
+    )
+    
+    save_dataframe(
+        df_growth_summary,
+        "registration_growth_rates_summary.csv",
+    )
+    
+    plot_growth_rates(
+        df_growth_summary,
+        statistic="median",
+    )
+    
+    plot_growth_rates(
+        df_growth_summary,
+        statistic="mean",
+    )
+    
+    for metric_name in METRICS:
+        plot_growth_rate_boxplot(
+            df_growth,
+            metric_name,
+        )
 
     # 3. 上位1%リポジトリの特定・除外
     excluded_ids, df_repo_activity = (
