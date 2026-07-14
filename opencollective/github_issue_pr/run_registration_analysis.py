@@ -3,9 +3,11 @@ from database import (
     build_project_table,
     create_db_engine,
     load_issue_pr_items,
+    load_commits,
 )
 from monthly_activity import (
     build_monthly_activity,
+    build_monthly_commit_activity,
     exclude_projects,
     identify_top_activity_repositories,
     summarize_monthly_activity,
@@ -49,6 +51,47 @@ def main():
         df_items=df_items,
         df_projects=df_projects,
         baseline_column="opencollective_created_at",
+    )
+
+    #コミット情報の収集
+    df_commits = load_commits(engine)
+
+    print("Loaded commits:", len(df_commits))
+    print(
+        "Commit repositories:",
+        df_commits["repo_name"].nunique(),
+    )
+    
+    commit_repos = set(df_commits["repo_name"].unique())
+
+    df_projects_common = df_projects[
+        df_projects["repo_name"].isin(commit_repos)
+    ].copy()
+
+    df_monthly_issue_pr = build_monthly_activity(
+        df_items,
+        df_projects_common,
+    )
+
+    df_monthly_commits = build_monthly_commit_activity(
+        df_commits,
+        df_projects_common,
+    )
+    
+    df_monthly = df_monthly_issue_pr.merge(
+        df_monthly_commits,
+        on=[
+            "collective_id",
+            "repo_name",
+            "relative_month",
+        ],
+        how="left",
+    )
+    
+    df_monthly["commits"] = (
+        df_monthly["commits"]
+        .fillna(0)
+        .astype(int)
     )
 
     df_summary = summarize_monthly_activity(

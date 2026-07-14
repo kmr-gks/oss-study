@@ -5,7 +5,7 @@ import api
 import pandas as pd
 from sqlalchemy import create_engine
 
-from config import DB_NAME, ITEM_TABLE
+from config import DB_NAME, ITEM_TABLE, COMMIT_TABLE
 
 
 def create_db_engine():
@@ -61,6 +61,37 @@ def load_issue_pr_items(engine) -> pd.DataFrame:
     df = df[
         df["opencollective_created_at"].notna()
     ].copy()
+
+    return df
+
+
+def load_commits(engine) -> pd.DataFrame:
+    query = f"""
+    SELECT
+        repo_name,
+        commit_time,
+        commit_hash
+    FROM {COMMIT_TABLE}
+    WHERE repo_name IS NOT NULL
+      AND commit_time IS NOT NULL
+    """
+
+    df = pd.read_sql(query, engine)
+
+    df["commit_time"] = pd.to_datetime(
+        df["commit_time"],
+        utc=True,
+        errors="coerce",
+    ).dt.tz_convert(None)
+
+    df = df[
+        df["commit_time"].notna()
+    ].copy()
+
+    # 念のため同じrepo内の同一コミットを重複除去
+    df = df.drop_duplicates(
+        ["repo_name", "commit_hash"]
+    )
 
     return df
 

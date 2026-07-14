@@ -92,6 +92,9 @@ def build_monthly_activity(
             }
 
             for metric_name, metric_config in METRICS.items():
+                if metric_name == "commits":
+                    continue
+                
                 row[metric_name] = count_metric_in_window(
                     project_items,
                     metric_config,
@@ -108,6 +111,68 @@ def build_monthly_activity(
             )
 
     return pd.DataFrame(monthly_rows)
+
+
+def build_monthly_commit_activity(
+    df_commits: pd.DataFrame,
+    df_projects: pd.DataFrame,
+    baseline_column: str = "opencollective_created_at",
+) -> pd.DataFrame:
+    """
+    プロジェクト×相対月ごとのコミット数を作る。
+    """
+    rows = []
+
+    commits_by_repo = {
+        repo_name: group
+        for repo_name, group in df_commits.groupby("repo_name")
+    }
+
+    for index, project in enumerate(
+        df_projects.itertuples(index=False),
+        start=1,
+    ):
+        repo_commits = commits_by_repo.get(
+            project.repo_name,
+            df_commits.iloc[0:0],
+        )
+
+        baseline_date = getattr(
+            project,
+            baseline_column,
+        )
+
+        for relative_month in RELATIVE_MONTHS:
+            month_start = (
+                baseline_date
+                + pd.DateOffset(months=relative_month)
+            )
+            month_end = (
+                baseline_date
+                + pd.DateOffset(months=relative_month + 1)
+            )
+
+            commit_count = int(
+                (
+                    repo_commits["commit_time"].ge(month_start)
+                    & repo_commits["commit_time"].lt(month_end)
+                ).sum()
+            )
+
+            rows.append({
+                "collective_id": project.collective_id,
+                "repo_name": project.repo_name,
+                "relative_month": relative_month,
+                "commits": commit_count,
+            })
+
+        if index % 100 == 0 or index == len(df_projects):
+            print(
+                f"Processed commit activity "
+                f"{index} / {len(df_projects)} projects"
+            )
+
+    return pd.DataFrame(rows)
 
 
 def summarize_monthly_activity(
