@@ -24,7 +24,7 @@ from plotting import (
     plot_growth_rate_boxplot,
     plot_all_metrics_median,
 )
-from statistical_tests import test_before_after_windows
+from statistical_tests import test_before_after_windows, run_issue_pr_growth_tests, print_test_summary
 
 
 def save_dataframe(df, filename):
@@ -199,25 +199,38 @@ def main():
     )
 
     # 5. 前後検定：上位1%除外
-    df_tests_excluded, df_test_projects_excluded = (
-        test_before_after_windows(
-            df_monthly_excluding_top
+    # 主検定:
+    # before_count == 0 のプロジェクトも含める
+
+    df_tests = run_issue_pr_growth_tests(
+        df_growth,
+        include_zero_before=True,
+    )
+
+    save_dataframe(
+        df_tests,
+        "registration_issue_pr_"
+        "wilcoxon_tests_holm.csv",
+    )
+
+    print_test_summary(df_tests)
+
+    # 補足検定
+    # 増加率を計算できるプロジェクトだけに限定。
+    # 主検定と結果が大きく変わらないか確認する。
+
+    df_tests_positive_before = (
+        run_issue_pr_growth_tests(
+            df_growth,
+            include_zero_before=False,
         )
     )
 
-    df_tests_excluded[
-        "analysis_scope"
-    ] = "excluding_top1"
-
     save_dataframe(
-        df_tests_excluded,
-        "registration_statistical_tests_"
-        "excluding_top1.csv",
-    )
-    save_dataframe(
-        df_test_projects_excluded,
-        "registration_statistical_tests_"
-        "project_level_excluding_top1.csv",
+        df_tests_positive_before,
+        "registration_issue_pr_"
+        "wilcoxon_tests_holm_"
+        "positive_before_only.csv",
     )
 
     # 6. グラフ
