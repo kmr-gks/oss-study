@@ -980,6 +980,7 @@ def run_analysis(
     config,
     engine,
     df_project_actors,
+    df_project_issues,
 ):
     analysis_label = config[
         "analysis_label"
@@ -1095,6 +1096,88 @@ def run_analysis(
             .sort_index()
             .to_string()
         )
+    
+    # ========================================================
+    # マッチした開発者が全期間に作成したIssue数
+    # ========================================================
+
+    df_created_issue_counts = (
+        count_issues_created_by_matched_payees(
+            df_project_issues=
+                df_project_issues,
+            df_matched_logins=
+                df_matched_logins,
+        )
+    )
+
+    df_created_issue_summary = (
+        summarize_created_issue_counts(
+            df_created_issue_counts
+        )
+    )
+
+    df_created_issue_bins = (
+        summarize_created_issue_count_bins(
+            df_created_issue_counts
+        )
+    )
+
+    print(
+        "\n===== Issues created by matched payees ====="
+    )
+
+    print(
+        df_created_issue_summary.to_string(
+            index=False
+        )
+    )
+
+    print(
+        "\n===== Issue count distribution ====="
+    )
+
+    print(
+        df_created_issue_bins.to_string(
+            index=False
+        )
+    )
+    
+    issue_count_detail_path = (
+        f"issue_actor_matching_"
+        f"{analysis_label}_"
+        f"created_issue_counts.csv"
+    )
+
+    issue_count_summary_path = (
+        f"issue_actor_matching_"
+        f"{analysis_label}_"
+        f"created_issue_summary.csv"
+    )
+
+    issue_count_bins_path = (
+        f"issue_actor_matching_"
+        f"{analysis_label}_"
+        f"created_issue_count_bins.csv"
+    )
+
+    df_created_issue_counts.to_csv(
+        issue_count_detail_path,
+        index=False,
+    )
+
+    df_created_issue_summary.to_csv(
+        issue_count_summary_path,
+        index=False,
+    )
+
+    df_created_issue_bins.to_csv(
+        issue_count_bins_path,
+        index=False,
+    )
+
+    print("Saved:", issue_count_detail_path)
+    print("Saved:", issue_count_summary_path)
+    print("Saved:", issue_count_bins_path)
 
     # マッチング確認用なので、現段階では
     # 結果をCSVにも出して目視確認できるようにする
@@ -1126,6 +1209,12 @@ def run_analysis(
             df_patterns,
         "matched_detail":
             df_matched_logins,
+        "created_issue_counts":
+            df_created_issue_counts,
+        "created_issue_summary":
+            df_created_issue_summary,
+        "created_issue_bins":
+            df_created_issue_bins,
     }
 
 
@@ -1174,6 +1263,8 @@ def main():
             engine=engine,
             df_project_actors=
                 df_project_actors,
+            df_project_issues=
+                df_project_issues
         )
 
         results.append(result)
@@ -1208,6 +1299,319 @@ def main():
         )
     )
     print("Saved:", output_path)
+
+def count_issues_created_by_matched_payees(
+    df_project_issues,
+    df_matched_logins,
+):
+    """
+    マッチングできた支払い受取人が、
+    同一プロジェクト内で全期間に作成したIssue数を集計する。
+
+    1行:
+        project × payee × GitHub login
+    """
+    if df_matched_logins.empty:
+        return pd.DataFrame()
+
+    # 複数loginに一致した曖昧なケースは除外
+    df_unambiguous_matches = (
+        df_matched_logins.loc[
+            df_matched_logins[
+                "matched_login_count"
+            ].eq(1),
+            [
+                PROJECT_COL,
+                "project_name",
+                "repo_name",
+                "github_account",
+                "to_account_slug",
+                "to_account_name",
+                "first_payment_at",
+                "github_login",
+                "matched_as_opener",
+                "matched_as_closer",
+                "match_methods",
+            ],
+        ]
+        .drop_duplicates(
+            subset=[
+                PROJECT_COL,
+                "to_account_slug",
+                "github_login",
+            ]
+        )
+        .copy()
+    )
+
+    # マッチしたGitHub loginが作成したIssueを抽出
+    df_matched_issues = (
+        df_project_issues
+        .merge(
+            df_unambiguous_matches,
+            left_on=[
+                PROJECT_COL,
+                "repo_name",
+                "opener_login",
+            ],
+            right_on=[
+                PROJECT_COL,
+                "repo_name",
+                "github_login",
+            ],
+            how="inner",
+            suffixes=(
+                "_issue",
+                "_payee",
+            ),
+        )
+    )
+
+    # 同じIssueがmergeで重複した場合に備えて除去
+    df_matched_issues = (
+        df_matched_issues
+        .drop_duplicates(
+            subset=[
+                PROJECT_COL,
+                "repo_name",
+                "github_login",
+                "number",
+            ]
+        )
+        .copy()
+    )
+
+    print("\n===== Matched Issue merge columns =====")
+    print(
+        df_matched_issues.columns.tolist()
+    )
+
+    # 開発者・プロジェクト単位でIssue数を集計
+    #
+    # github_accountはmerge後に
+    # github_account_issue / github_account_payee
+    # となる可能性があるため、groupbyには含めない。
+    df_issue_counts = (
+        df_matched_issues
+        .groupby(
+            [
+                PROJECT_COL,
+                "project_name",
+                "repo_name",
+                "to_account_slug",
+                "to_account_name",
+                "github_login",
+                "first_payment_at",
+                "matched_as_opener",
+                "matched_as_closer",
+                "match_methods",
+            ],
+            dropna=False,
+        )
+        .agg(
+            first_issue_created_at=(
+                "created_at",
+                "min",
+            ),
+            last_issue_created_at=(
+                "created_at",
+                "max",
+            ),
+            total_issues_created=(
+                "number",
+                "nunique",
+            ),
+        )
+        .reset_index()
+    )
+
+    # マッチしたがIssue作成者ではなかったcloser_onlyも残す。
+    # その場合、Issue作成数は0になる。
+    df_issue_counts = (
+        df_unambiguous_matches
+        .merge(
+            df_issue_counts,
+            on=[
+                PROJECT_COL,
+                "project_name",
+                "repo_name",
+                "to_account_slug",
+                "to_account_name",
+                "first_payment_at",
+                "github_login",
+                "matched_as_opener",
+                "matched_as_closer",
+                "match_methods",
+            ],
+            how="left",
+        )
+    )
+
+    df_issue_counts[
+        "total_issues_created"
+    ] = (
+        df_issue_counts[
+            "total_issues_created"
+        ]
+        .fillna(0)
+        .astype(int)
+    )
+
+    return (
+        df_issue_counts
+        .sort_values(
+            "total_issues_created",
+            ascending=False,
+        )
+        .reset_index(drop=True)
+    )
+
+
+def summarize_created_issue_counts(
+    df_issue_counts,
+):
+    if df_issue_counts.empty:
+        return pd.DataFrame()
+
+    issue_counts = (
+        df_issue_counts[
+            "total_issues_created"
+        ]
+    )
+
+    df_summary = pd.DataFrame(
+        [
+            {
+                "n_project_payees":
+                    len(df_issue_counts),
+
+                "n_projects":
+                    df_issue_counts[
+                        PROJECT_COL
+                    ].nunique(),
+
+                "n_payees":
+                    df_issue_counts[
+                        "to_account_slug"
+                    ].nunique(),
+
+                "n_github_logins":
+                    df_issue_counts[
+                        "github_login"
+                    ].nunique(),
+
+                "total_issues_created":
+                    issue_counts.sum(),
+
+                "mean_issues_created":
+                    issue_counts.mean(),
+
+                "median_issues_created":
+                    issue_counts.median(),
+
+                "q1_issues_created":
+                    issue_counts.quantile(0.25),
+
+                "q3_issues_created":
+                    issue_counts.quantile(0.75),
+
+                "min_issues_created":
+                    issue_counts.min(),
+
+                "max_issues_created":
+                    issue_counts.max(),
+
+                "n_created_zero_issues":
+                    int(
+                        (
+                            issue_counts == 0
+                        ).sum()
+                    ),
+
+                "n_created_at_least_one_issue":
+                    int(
+                        (
+                            issue_counts > 0
+                        ).sum()
+                    ),
+
+                "ratio_created_at_least_one_issue":
+                    (
+                        (issue_counts > 0).mean()
+                        if len(issue_counts)
+                        else np.nan
+                    ),
+            }
+        ]
+    )
+
+    return df_summary
+
+
+def summarize_created_issue_count_bins(
+    df_issue_counts,
+):
+    if df_issue_counts.empty:
+        return pd.DataFrame()
+
+    df = df_issue_counts.copy()
+
+    df["issue_count_bin"] = pd.cut(
+        df["total_issues_created"],
+        bins=[
+            -1,
+            0,
+            1,
+            5,
+            10,
+            50,
+            100,
+            np.inf,
+        ],
+        labels=[
+            "0",
+            "1",
+            "2-5",
+            "6-10",
+            "11-50",
+            "51-100",
+            "101+",
+        ],
+    )
+
+    df_bins = (
+        df.groupby(
+            "issue_count_bin",
+            observed=False,
+        )
+        .agg(
+            n_project_payees=(
+                "total_issues_created",
+                "size",
+            ),
+            n_projects=(
+                PROJECT_COL,
+                "nunique",
+            ),
+            n_payees=(
+                "to_account_slug",
+                "nunique",
+            ),
+        )
+        .reset_index()
+    )
+
+    total = len(df)
+
+    df_bins["ratio"] = (
+        df_bins["n_project_payees"]
+        / total
+        if total
+        else np.nan
+    )
+
+    return df_bins
+
 
 
 if __name__ == "__main__":
