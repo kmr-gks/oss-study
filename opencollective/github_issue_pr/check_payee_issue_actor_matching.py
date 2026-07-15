@@ -15,6 +15,7 @@ from issue_label_classification import (
     classify_issue_labels,
     summarize_issue_categories,
     summarize_issue_category_overlap,
+    summarize_other_labeled_keys,
 )
 
 
@@ -1380,6 +1381,37 @@ def run_analysis(
     print("Saved:", category_detail_path)
     print("Saved:", category_summary_path)
     print("Saved:", category_overlap_path)
+
+    df_other_label_summary = (
+        summarize_other_labeled_keys(
+            df_issues=df_issue_period,
+            df_categories=df_issue_categories,
+        )
+    )
+
+    print(
+        "\n===== Top labels in other_labeled ====="
+    )
+
+    print(
+        df_other_label_summary
+        .head(30)
+        .to_string(index=False)
+    )
+
+    other_label_path = (
+        f"issue_actor_matching_"
+        f"{analysis_label}_"
+        f"other_labeled_top_keys_12m_"
+        f"before_after.csv"
+    )
+    
+    df_other_label_summary.to_csv(
+        other_label_path,
+        index=False,
+    )
+    
+    print("Saved:", other_label_path)
 
     return {
         "analysis_label":

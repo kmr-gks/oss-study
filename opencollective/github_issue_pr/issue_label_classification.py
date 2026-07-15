@@ -442,3 +442,71 @@ def summarize_issue_category_overlap(
     )
 
     return df_summary
+
+def summarize_other_labeled_keys(
+    df_issues: pd.DataFrame,
+    df_categories: pd.DataFrame,
+) -> pd.DataFrame:
+    """
+    other_labeledに分類されたIssueに付いている
+    正規化ラベルの頻度を集計する。
+    """
+    issue_id_columns = [
+        PROJECT_COL,
+        "repo_name",
+        "github_login",
+        "number",
+    ]
+
+    other_issue_ids = (
+        df_categories.loc[
+            df_categories["category"].eq(
+                "other_labeled"
+            ),
+            issue_id_columns,
+        ]
+        .drop_duplicates()
+    )
+
+    df_labels = explode_issue_labels(
+        df_issues
+    )
+
+    df_other_labels = df_labels.merge(
+        other_issue_ids,
+        on=issue_id_columns,
+        how="inner",
+    )
+
+    df_other_labels = df_other_labels[
+        df_other_labels[
+            "normalized_label"
+        ].ne("")
+    ].copy()
+
+    return (
+        df_other_labels
+        .groupby(
+            "normalized_label",
+            as_index=False,
+        )
+        .agg(
+            n_issues=(
+                "number",
+                "nunique",
+            ),
+            n_projects=(
+                PROJECT_COL,
+                "nunique",
+            ),
+            n_developers=(
+                "github_login",
+                "nunique",
+            ),
+        )
+        .sort_values(
+            "n_issues",
+            ascending=False,
+        )
+        .reset_index(drop=True)
+    )
