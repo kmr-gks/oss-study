@@ -17,6 +17,12 @@ from issue_label_classification import (
     summarize_issue_category_overlap,
     summarize_other_labeled_keys,
 )
+from issue_category_before_after_analysis import (
+    build_category_before_after_counts,
+    summarize_category_before_after,
+    build_category_period_totals,
+    build_category_period_comparison,
+)
 
 
 PROJECT_COL = "project_slug"
@@ -1083,6 +1089,67 @@ def run_analysis(
         )
     )
 
+    # ========================================================
+    # カテゴリ別の支払い前後12か月比較
+    # ========================================================
+
+    df_unambiguous_matches = (
+        issue_before_after_result[
+            "matches"
+        ]
+    )
+
+    df_category_before_after_counts = (
+        build_category_before_after_counts(
+            df_unambiguous_matches=
+                df_unambiguous_matches,
+            df_period_issues=
+                df_issue_period,
+            df_issue_categories=
+                df_issue_categories,
+            window_months=12,
+        )
+    )
+
+    df_category_before_after_summary = (
+        summarize_category_before_after(
+            df_category_before_after_counts
+        )
+    )
+
+    df_category_period_totals = (
+        build_category_period_totals(
+            df_period_issues=
+                df_issue_period,
+            df_issue_categories=
+                df_issue_categories,
+        )
+    )
+
+    df_category_period_comparison = (
+        build_category_period_comparison(
+            df_category_period_totals
+        )
+    )
+
+    print(
+        "\n===== Category before-after summary ====="
+    )
+
+    print(
+        df_category_before_after_summary
+        .to_string(index=False)
+    )
+
+    print(
+        "\n===== Category period comparison ====="
+    )
+
+    print(
+        df_category_period_comparison
+        .to_string(index=False)
+    )
+
     df_issue_category_summary = (
         summarize_issue_categories(
             df_issues=df_issue_period,
@@ -1405,13 +1472,62 @@ def run_analysis(
         f"other_labeled_top_keys_12m_"
         f"before_after.csv"
     )
-    
+
     df_other_label_summary.to_csv(
         other_label_path,
         index=False,
     )
-    
+
     print("Saved:", other_label_path)
+
+    category_counts_path = (
+        f"issue_actor_matching_"
+        f"{analysis_label}_"
+        f"category_counts_12m_before_after.csv"
+    )
+
+    category_summary_path = (
+        f"issue_actor_matching_"
+        f"{analysis_label}_"
+        f"category_summary_12m_before_after.csv"
+    )
+
+    category_period_totals_path = (
+        f"issue_actor_matching_"
+        f"{analysis_label}_"
+        f"category_period_totals_12m.csv"
+    )
+
+    category_comparison_path = (
+        f"issue_actor_matching_"
+        f"{analysis_label}_"
+        f"category_period_comparison_12m.csv"
+    )
+
+    df_category_before_after_counts.to_csv(
+        category_counts_path,
+        index=False,
+    )
+
+    df_category_before_after_summary.to_csv(
+        category_summary_path,
+        index=False,
+    )
+
+    df_category_period_totals.to_csv(
+        category_period_totals_path,
+        index=False,
+    )
+
+    df_category_period_comparison.to_csv(
+        category_comparison_path,
+        index=False,
+    )
+
+    print("Saved:", category_counts_path)
+    print("Saved:", category_summary_path)
+    print("Saved:", category_period_totals_path)
+    print("Saved:", category_comparison_path)
 
     return {
         "analysis_label":
@@ -1438,6 +1554,14 @@ def run_analysis(
             df_issue_category_summary,
         "issue_category_overlap":
             df_issue_category_overlap,
+        "category_before_after_counts":
+            df_category_before_after_counts,
+        "category_before_after_summary":
+            df_category_before_after_summary,
+        "category_period_totals":
+            df_category_period_totals,
+        "category_period_comparison":
+            df_category_period_comparison,
     }
 
 

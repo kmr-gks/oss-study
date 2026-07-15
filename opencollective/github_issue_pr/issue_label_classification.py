@@ -14,6 +14,8 @@ ISSUE_CATEGORY_KEYS = {
         "0kindbug",
         "kindbug",
         "issuebug",
+        "abug",
+        "cbug",
     },
 
     "feature_development": {
@@ -21,19 +23,42 @@ ISSUE_CATEGORY_KEYS = {
         "feature",
         "featurerequest",
         "typeenhancement",
+        "typefeature",
+        "tenhancement",
+        "cfeature",
+        "improvement",
+        "abilities",
+        "visuals",
+        "ui",
+        "performance",
     },
 
     "contributor_recruitment": {
         "helpwanted",
         "goodfirstissue",
+        "acceptingprs",
+        "statusacceptingprs",
+        "hacktoberfest",
     },
 
     "documentation": {
         "documentation",
+        "areadocumentation",
+        "cdocs",
     },
 
     "question_support": {
         "question",
+        "discussion",
+        "brainstorm",
+    },
+
+    "maintenance": {
+        "repomaintenance",
+        "arearepositorytooling",
+        "typechore",
+        "pipeline",
+        "breakingchange",
     },
 
     "issue_triage_closure": {
@@ -43,6 +68,7 @@ ISSUE_CATEGORY_KEYS = {
         "invalid",
         "duplicate",
         "wontfix",
+        "lockedduetoage",
     },
 }
 
