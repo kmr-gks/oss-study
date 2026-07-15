@@ -13,9 +13,9 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # 分析対象指標
 METRICS = {
-    "commits": {
-        "label": "Commits",
-    },
+#    "commits": {
+#        "label": "Commits",
+#    },
     "opened_issues": {
         "label": "Opened issues",
         "date_column": "created_at",
