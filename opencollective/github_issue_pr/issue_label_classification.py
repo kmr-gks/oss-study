@@ -16,6 +16,10 @@ ISSUE_CATEGORY_KEYS = {
         "issuebug",
         "abug",
         "cbug",
+        "tbug",
+        "idefect",
+        "p3minorbug",
+        "bugbug",
     },
 
     "feature_development": {
@@ -31,6 +35,13 @@ ISSUE_CATEGORY_KEYS = {
         "visuals",
         "ui",
         "performance",
+        "newfeaturerequest",
+        "featuregui",
+        "unicornfeaturerequest",
+        "featuremultiworld",
+        "awish",
+        "rssenhancement",
+        "enhancementfeature",
     },
 
     "contributor_recruitment": {
@@ -41,11 +52,12 @@ ISSUE_CATEGORY_KEYS = {
         "hacktoberfest",
     },
 
-    "documentation": {
-        "documentation",
-        "areadocumentation",
-        "cdocs",
-    },
+"documentation": {
+    "documentation",
+    "areadocumentation",
+    "cdocs",
+    "doc",
+},
 
     "question_support": {
         "question",
@@ -59,6 +71,11 @@ ISSUE_CATEGORY_KEYS = {
         "typechore",
         "pipeline",
         "breakingchange",
+        "refactoring",
+        "crefactor",
+        "ci",
+        "cinfra",
+        "portability",
     },
 
     "issue_triage_closure": {
@@ -69,6 +86,7 @@ ISSUE_CATEGORY_KEYS = {
         "duplicate",
         "wontfix",
         "lockedduetoage",
+        "triage",
     },
 }
 

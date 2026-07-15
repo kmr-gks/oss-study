@@ -132,6 +132,7 @@ def build_category_before_after_counts(
     issue_identity_columns = [
         PROJECT_COL,
         "repo_name",
+        "to_account_slug",
         "github_login",
         "number",
     ]
@@ -592,6 +593,7 @@ def build_category_period_totals(
     issue_identity_columns = [
         PROJECT_COL,
         "repo_name",
+        "to_account_slug",
         "github_login",
         "number",
     ]
