@@ -11,6 +11,11 @@ from sqlalchemy import create_engine, inspect
 from issue_before_after_analysis import (
     run_issue_before_after_analysis,
 )
+from issue_label_classification import (
+    classify_issue_labels,
+    summarize_issue_categories,
+    summarize_issue_category_overlap,
+)
 
 
 PROJECT_COL = "project_slug"
@@ -213,7 +218,8 @@ SELECT
     created_at,
     closed_at,
     {opener_column} AS opener_login,
-    {closer_select}
+    {closer_select},
+    labels
 FROM public.github_issue_pr_items
 WHERE item_type = 'issue'
   AND repo_name IS NOT NULL
@@ -1059,11 +1065,53 @@ def run_analysis(
             window_months=12,
         )
     )
+    
+    # ========================================================
+    # 支払い前後12か月のIssueをラベル分類
+    # ========================================================
 
     df_issue_period = (
         issue_before_after_result[
             "period_issues"
         ]
+    )
+
+    df_issue_categories = (
+        classify_issue_labels(
+            df_issue_period
+        )
+    )
+
+    df_issue_category_summary = (
+        summarize_issue_categories(
+            df_issues=df_issue_period,
+            df_categories=
+                df_issue_categories,
+        )
+    )
+
+    df_issue_category_overlap = (
+        summarize_issue_category_overlap(
+            df_issue_categories
+        )
+    )
+
+    print(
+        "\n===== Issue category summary ====="
+    )
+
+    print(
+        df_issue_category_summary
+        .to_string(index=False)
+    )
+
+    print(
+        "\n===== Issue category overlap ====="
+    )
+
+    print(
+        df_issue_category_overlap
+        .to_string(index=False)
     )
 
     df_issue_before_after_counts = (
@@ -1292,6 +1340,46 @@ def run_analysis(
     print("Saved:", issue_period_path)
     print("Saved:", issue_counts_path)
     print("Saved:", issue_summary_path)
+    
+    category_detail_path = (
+        f"issue_actor_matching_"
+        f"{analysis_label}_"
+        f"issue_categories_12m_"
+        f"before_after.csv"
+    )
+
+    category_summary_path = (
+        f"issue_actor_matching_"
+        f"{analysis_label}_"
+        f"issue_category_summary_12m_"
+        f"before_after.csv"
+    )
+
+    category_overlap_path = (
+        f"issue_actor_matching_"
+        f"{analysis_label}_"
+        f"issue_category_overlap_12m_"
+        f"before_after.csv"
+    )
+
+    df_issue_categories.to_csv(
+        category_detail_path,
+        index=False,
+    )
+
+    df_issue_category_summary.to_csv(
+        category_summary_path,
+        index=False,
+    )
+
+    df_issue_category_overlap.to_csv(
+        category_overlap_path,
+        index=False,
+    )
+
+    print("Saved:", category_detail_path)
+    print("Saved:", category_summary_path)
+    print("Saved:", category_overlap_path)
 
     return {
         "analysis_label":
@@ -1312,6 +1400,12 @@ def run_analysis(
             df_issue_before_after_counts,
         "issue_before_after_summary":
             df_issue_before_after_summary,
+        "issue_categories":
+            df_issue_categories,
+        "issue_category_summary":
+            df_issue_category_summary,
+        "issue_category_overlap":
+            df_issue_category_overlap,
     }
 
 
