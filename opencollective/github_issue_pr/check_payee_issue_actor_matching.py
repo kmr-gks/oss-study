@@ -8,6 +8,9 @@ import unicodedata
 import numpy as np
 import pandas as pd
 from sqlalchemy import create_engine, inspect
+from issue_before_after_analysis import (
+    run_issue_before_after_analysis,
+)
 
 
 PROJECT_COL = "project_slug"
@@ -1042,6 +1045,59 @@ def run_analysis(
         df_first_payments,
         df_project_actors,
     )
+    
+    # ========================================================
+    # 初回支払い前後12か月のIssue作成数
+    # ========================================================
+
+    issue_before_after_result = (
+        run_issue_before_after_analysis(
+            df_project_issues=
+                df_project_issues,
+            df_matched_logins=
+                df_matched_logins,
+            window_months=12,
+        )
+    )
+
+    df_issue_period = (
+        issue_before_after_result[
+            "period_issues"
+        ]
+    )
+
+    df_issue_before_after_counts = (
+        issue_before_after_result[
+            "counts"
+        ]
+    )
+
+    df_issue_before_after_summary = (
+        issue_before_after_result[
+            "summary"
+        ]
+    )
+
+    print(
+        "\n===== Issues before and after first payment ====="
+    )
+
+    print(
+        df_issue_before_after_summary
+        .to_string(index=False)
+    )
+
+    print(
+        "\n===== Activity status distribution ====="
+    )
+
+    print(
+        df_issue_before_after_counts[
+            "activity_status"
+        ]
+        .value_counts()
+        .to_string()
+    )
 
     df_summary = summarize_matching(
         df_first_payments,
@@ -1199,6 +1255,43 @@ def run_analysis(
     print("\nSaved:", paths["summary"])
     print("Saved:", paths["patterns"])
     print("Saved:", paths["matched_detail"])
+    
+    issue_period_path = (
+        f"issue_actor_matching_"
+        f"{analysis_label}_"
+        f"issues_within_12m_before_after.csv"
+    )
+
+    issue_counts_path = (
+        f"issue_actor_matching_"
+        f"{analysis_label}_"
+        f"issue_counts_12m_before_after.csv"
+    )
+
+    issue_summary_path = (
+        f"issue_actor_matching_"
+        f"{analysis_label}_"
+        f"issue_summary_12m_before_after.csv"
+    )
+
+    df_issue_period.to_csv(
+        issue_period_path,
+        index=False,
+    )
+
+    df_issue_before_after_counts.to_csv(
+        issue_counts_path,
+        index=False,
+    )
+
+    df_issue_before_after_summary.to_csv(
+        issue_summary_path,
+        index=False,
+    )
+
+    print("Saved:", issue_period_path)
+    print("Saved:", issue_counts_path)
+    print("Saved:", issue_summary_path)
 
     return {
         "analysis_label":
@@ -1215,6 +1308,10 @@ def run_analysis(
             df_created_issue_summary,
         "created_issue_bins":
             df_created_issue_bins,
+        "issue_before_after_counts":
+            df_issue_before_after_counts,
+        "issue_before_after_summary":
+            df_issue_before_after_summary,
     }
 
 
