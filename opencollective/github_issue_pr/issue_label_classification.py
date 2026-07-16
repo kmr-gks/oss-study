@@ -1,6 +1,6 @@
 import re
 import unicodedata
-
+import numpy as np
 import pandas as pd
 
 
@@ -551,6 +551,492 @@ def summarize_other_labeled_keys(
         .sort_values(
             "n_issues",
             ascending=False,
+        )
+        .reset_index(drop=True)
+    )
+
+def classify_project_issue_labels(
+    df_issues: pd.DataFrame,
+    group_columns=None,
+) -> pd.DataFrame:
+    """
+    プロジェクト単位のIssueをカテゴリ分類する。
+
+    既存のclassify_issue_labels()はgithub_loginを必須とするため、
+    github_loginが存在しない場合は内部的に固定値を追加して利用する。
+
+    Parameters
+    ----------
+    df_issues:
+        最低限、以下の列を持つDataFrame。
+
+        project_slug
+        repo_name
+        number
+        created_at
+        labels
+
+    group_columns:
+        分類結果に残したい追加列。
+
+        例:
+            [
+                "development_spend_amount_tertile",
+                "development_expense_amount_usd",
+            ]
+
+    Returns
+    -------
+    pd.DataFrame
+        1 Issue × 1 categoryのDataFrame。
+        1つのIssueが複数カテゴリに属することを許す。
+    """
+    required_columns = {
+        PROJECT_COL,
+        "repo_name",
+        "number",
+        "created_at",
+        "labels",
+    }
+
+    missing_columns = (
+        required_columns
+        - set(df_issues.columns)
+    )
+
+    if missing_columns:
+        raise ValueError(
+            "df_issues is missing columns: "
+            f"{sorted(missing_columns)}"
+        )
+
+    if group_columns is None:
+        group_columns = []
+
+    missing_group_columns = (
+        set(group_columns)
+        - set(df_issues.columns)
+    )
+
+    if missing_group_columns:
+        raise ValueError(
+            "df_issues is missing group columns: "
+            f"{sorted(missing_group_columns)}"
+        )
+
+    df = df_issues.copy()
+
+    added_dummy_login = False
+
+    if "github_login" not in df.columns:
+        df["github_login"] = (
+            "__project_level_issue__"
+        )
+        added_dummy_login = True
+
+    df_categories = classify_issue_labels(
+        df
+    )
+
+    issue_id_columns = [
+        PROJECT_COL,
+        "repo_name",
+        "github_login",
+        "number",
+    ]
+
+    if group_columns:
+        df_group_values = (
+            df[
+                issue_id_columns
+                + group_columns
+            ]
+            .drop_duplicates(
+                subset=issue_id_columns
+            )
+        )
+
+        df_categories = (
+            df_categories.merge(
+                df_group_values,
+                on=issue_id_columns,
+                how="left",
+                validate="many_to_one",
+            )
+        )
+
+    if added_dummy_login:
+        df_categories = (
+            df_categories.drop(
+                columns="github_login"
+            )
+        )
+
+    result_id_columns = [
+        PROJECT_COL,
+        "repo_name",
+        "number",
+        "category",
+    ]
+
+    return (
+        df_categories
+        .drop_duplicates(
+            subset=result_id_columns
+        )
+        .reset_index(drop=True)
+    )
+
+
+def summarize_project_issue_categories(
+    df_issues: pd.DataFrame,
+    df_categories: pd.DataFrame,
+    group_column: str,
+    group_order=None,
+) -> pd.DataFrame:
+    """
+    プロジェクト単位のIssueカテゴリをグループ別に集計する。
+
+    例:
+        group_column =
+            "development_spend_amount_tertile"
+
+    出力する割合:
+        issue_category_ratio:
+            グループ内のユニークIssue数に対する割合。
+            複数カテゴリ所属があるため、
+            カテゴリ合計は100%を超える場合がある。
+
+        category_assignment_share:
+            全カテゴリ割当数に対する割合。
+            帯グラフではこちらを使用し、
+            各グループ内で合計100%になる。
+    """
+    required_issue_columns = {
+        PROJECT_COL,
+        "repo_name",
+        "number",
+        group_column,
+    }
+
+    missing_issue_columns = (
+        required_issue_columns
+        - set(df_issues.columns)
+    )
+
+    if missing_issue_columns:
+        raise ValueError(
+            "df_issues is missing columns: "
+            f"{sorted(missing_issue_columns)}"
+        )
+
+    required_category_columns = {
+        PROJECT_COL,
+        "repo_name",
+        "number",
+        "category",
+        group_column,
+    }
+
+    missing_category_columns = (
+        required_category_columns
+        - set(df_categories.columns)
+    )
+
+    if missing_category_columns:
+        raise ValueError(
+            "df_categories is missing columns: "
+            f"{sorted(missing_category_columns)}"
+        )
+
+    issue_id_columns = [
+        PROJECT_COL,
+        "repo_name",
+        "number",
+    ]
+
+    df_unique_issues = (
+        df_issues[
+            issue_id_columns
+            + [group_column]
+        ]
+        .drop_duplicates(
+            subset=issue_id_columns
+        )
+    )
+
+    df_unique_categories = (
+        df_categories[
+            issue_id_columns
+            + [
+                group_column,
+                "category",
+            ]
+        ]
+        .drop_duplicates(
+            subset=(
+                issue_id_columns
+                + ["category"]
+            )
+        )
+    )
+
+    df_category_counts = (
+        df_unique_categories
+        .groupby(
+            [
+                group_column,
+                "category",
+            ],
+            observed=False,
+            as_index=False,
+        )
+        .agg(
+            n_category_assignments=(
+                "number",
+                "count",
+            ),
+            n_projects=(
+                PROJECT_COL,
+                "nunique",
+            ),
+        )
+    )
+
+    df_issue_totals = (
+        df_unique_issues
+        .groupby(
+            group_column,
+            observed=False,
+            as_index=False,
+        )
+        .agg(
+            total_unique_issues=(
+                "number",
+                "count",
+            ),
+            n_projects_with_issues=(
+                PROJECT_COL,
+                "nunique",
+            ),
+        )
+    )
+
+    df_assignment_totals = (
+        df_category_counts
+        .groupby(
+            group_column,
+            observed=False,
+            as_index=False,
+        )
+        .agg(
+            total_category_assignments=(
+                "n_category_assignments",
+                "sum",
+            )
+        )
+    )
+
+    df_summary = (
+        df_category_counts
+        .merge(
+            df_issue_totals,
+            on=group_column,
+            how="left",
+            validate="many_to_one",
+        )
+        .merge(
+            df_assignment_totals,
+            on=group_column,
+            how="left",
+            validate="many_to_one",
+        )
+    )
+
+    df_summary[
+        "issue_category_ratio"
+    ] = np.where(
+        df_summary[
+            "total_unique_issues"
+        ].gt(0),
+        (
+            df_summary[
+                "n_category_assignments"
+            ]
+            / df_summary[
+                "total_unique_issues"
+            ]
+        ),
+        0.0,
+    )
+
+    df_summary[
+        "category_assignment_share"
+    ] = np.where(
+        df_summary[
+            "total_category_assignments"
+        ].gt(0),
+        (
+            df_summary[
+                "n_category_assignments"
+            ]
+            / df_summary[
+                "total_category_assignments"
+            ]
+        ),
+        0.0,
+    )
+
+    if group_order is not None:
+        df_summary[group_column] = (
+            pd.Categorical(
+                df_summary[group_column],
+                categories=group_order,
+                ordered=True,
+            )
+        )
+
+        df_summary = (
+            df_summary.sort_values(
+                [
+                    group_column,
+                    "n_category_assignments",
+                ],
+                ascending=[
+                    True,
+                    False,
+                ],
+            )
+        )
+    else:
+        df_summary = (
+            df_summary.sort_values(
+                [
+                    group_column,
+                    "n_category_assignments",
+                ],
+                ascending=[
+                    True,
+                    False,
+                ],
+            )
+        )
+
+    return df_summary.reset_index(
+        drop=True
+    )
+
+def summarize_project_issue_category_overlap(
+    df_categories: pd.DataFrame,
+    group_column: str,
+) -> pd.DataFrame:
+    """
+    各グループについて、1つのIssueが
+    いくつのカテゴリに分類されたかを集計する。
+    """
+    required_columns = {
+        PROJECT_COL,
+        "repo_name",
+        "number",
+        "category",
+        group_column,
+    }
+
+    missing_columns = (
+        required_columns
+        - set(df_categories.columns)
+    )
+
+    if missing_columns:
+        raise ValueError(
+            "df_categories is missing columns: "
+            f"{sorted(missing_columns)}"
+        )
+
+    issue_id_columns = [
+        PROJECT_COL,
+        "repo_name",
+        "number",
+    ]
+
+    df_unique = (
+        df_categories[
+            issue_id_columns
+            + [
+                group_column,
+                "category",
+            ]
+        ]
+        .drop_duplicates(
+            subset=(
+                issue_id_columns
+                + ["category"]
+            )
+        )
+    )
+
+    # observed=Trueが重要
+    df_overlap = (
+        df_unique
+        .groupby(
+            issue_id_columns
+            + [group_column],
+            observed=True,
+            as_index=False,
+        )
+        .agg(
+            n_categories=(
+                "category",
+                "nunique",
+            ),
+            categories=(
+                "category",
+                lambda values: ";".join(
+                    sorted(set(values))
+                ),
+            ),
+        )
+    )
+
+    df_summary = (
+        df_overlap
+        .groupby(
+            [
+                group_column,
+                "n_categories",
+            ],
+            observed=True,
+            as_index=False,
+        )
+        .agg(
+            n_issues=(
+                "number",
+                "count",
+            )
+        )
+    )
+
+    df_summary["total_issues"] = (
+        df_summary
+        .groupby(
+            group_column,
+            observed=True,
+        )["n_issues"]
+        .transform("sum")
+    )
+
+    df_summary["ratio"] = (
+        df_summary["n_issues"]
+        / df_summary["total_issues"]
+    )
+
+    return (
+        df_summary
+        .sort_values(
+            [
+                group_column,
+                "n_categories",
+            ]
         )
         .reset_index(drop=True)
     )
