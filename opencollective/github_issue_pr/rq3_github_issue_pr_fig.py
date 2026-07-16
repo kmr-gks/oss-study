@@ -337,7 +337,7 @@ plot_mean_median(
 #    4種類の指標 × mean/median = 8本の線
 # =========================
 
-plt.figure(figsize=(5, 3.5))
+plt.figure(figsize=(5, 4.5))
 
 # Issues: opened
 plt.plot(
@@ -427,7 +427,8 @@ plt.ylabel("Monthly count")
 plt.legend(
     fontsize=8,
     ncol=2,
-    loc="upper right"
+    loc="lower center",
+    bbox_to_anchor=(0.5, 1.02)
 )
 
 plt.grid(True, alpha=0.3)
