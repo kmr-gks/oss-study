@@ -241,7 +241,7 @@ def plot_growth_rates(
 
     value_column = f"{statistic}_growth_rate_pct"
 
-    plt.figure(figsize=(6.5, 4.2))
+    plt.figure(figsize=(5, 3.5))
 
     for metric_name, metric_config in METRICS.items():
         metric_data = (

@@ -187,7 +187,7 @@ def plot_100_percent_stacked_bar(
     100%積み上げ棒グラフとして出力する。
     """
     fig, ax = plt.subplots(
-        figsize=(8.3, 4.6)
+        figsize=(5, 3.5)
     )
 
     # 複数カテゴリ所属を許しているため、
@@ -268,12 +268,6 @@ def plot_100_percent_stacked_bar(
         fontsize=8,
     )
 
-    # グラフ内部にタイトルを置かない場合は、
-    # 以下をコメントアウトしてもよい
-    ax.set_title(
-        analysis_title,
-        fontsize=11,
-    )
 
     fig.subplots_adjust(
         left=0.15,
@@ -281,6 +275,8 @@ def plot_100_percent_stacked_bar(
         top=0.88,
         bottom=0.33,
     )
+
+    fig.tight_layout()
 
     fig.savefig(
         output_path,

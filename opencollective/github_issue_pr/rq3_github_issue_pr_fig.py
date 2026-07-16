@@ -337,7 +337,7 @@ plot_mean_median(
 #    4種類の指標 × mean/median = 8本の線
 # =========================
 
-plt.figure(figsize=(8.0, 4.8))
+plt.figure(figsize=(5, 3.5))
 
 # Issues: opened
 plt.plot(
@@ -422,7 +422,7 @@ plt.xticks(plot_months)
 
 plt.xlabel("Months before / after Open Collective registration")
 plt.ylabel("Monthly count")
-plt.title("Issue and pull request activity around Open Collective registration")
+#plt.title("Issue and pull request activity around Open Collective registration")
 
 plt.legend(
     fontsize=8,
