@@ -332,7 +332,8 @@ fig7 delete
 
 fig8:table 7のように上位33%、下位33%のプロジェクトのissueの内訳を示す方がいい。期間は登録後1年間。
 
+増加率のグラフで、Window size before and after registration (months)に説明文が必要
+
 今後の展望:
 
 今後はどんなissueがあるか見たい。文字を見る
-

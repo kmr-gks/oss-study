@@ -241,7 +241,7 @@ def plot_growth_rates(
 
     value_column = f"{statistic}_growth_rate_pct"
 
-    plt.figure(figsize=(5, 3.5))
+    plt.figure(figsize=(5, 4.5))
 
     for metric_name, metric_config in METRICS.items():
         metric_data = (
@@ -270,7 +270,7 @@ def plot_growth_rates(
     plt.ylabel(f"{statistic.capitalize()} growth rate (%)")
 
     plt.grid(True, alpha=0.3)
-    plt.legend(fontsize=8)
+    plt.legend(loc="lower center",bbox_to_anchor=(0.5, -0.5), ncol=2)
     plt.tight_layout()
 
     output_path = (
