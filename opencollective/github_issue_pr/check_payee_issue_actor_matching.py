@@ -22,6 +22,7 @@ from issue_category_before_after_analysis import (
     summarize_category_before_after,
     build_category_period_totals,
     build_category_period_comparison,
+    test_category_share_before_after,
 )
 
 
@@ -1528,6 +1529,33 @@ def run_analysis(
     print("Saved:", category_summary_path)
     print("Saved:", category_period_totals_path)
     print("Saved:", category_comparison_path)
+
+    df_category_share_tests = (
+        test_category_share_before_after(
+            df_category_before_after_counts
+        )
+    )
+
+    print(
+        "\n===== Category share before-after tests ====="
+    )
+
+    print(
+        df_category_share_tests
+        .to_string(index=False)
+    )
+
+    category_test_path = (
+        f"issue_actor_matching_"
+        f"{analysis_label}_"
+        f"category_share_wilcoxon_12m.csv"
+    )
+
+    df_category_share_tests.to_csv(
+        category_test_path,
+        index=False,
+    )
+    print("Saved:", category_test_path)
 
     return {
         "analysis_label":

@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+from scipy.stats import wilcoxon
+from statsmodels.stats.multitest import multipletests
 
 
 PROJECT_COL = "project_slug"
@@ -791,6 +793,136 @@ def build_category_period_comparison(
         .sort_values(
             "before_n_issues",
             ascending=False,
+        )
+        .reset_index(drop=True)
+    )
+
+
+MAIN_CATEGORIES = [
+    "feature_development",
+    "bug_fixing",
+    "contributor_recruitment",
+    "documentation",
+    "maintenance",
+    "issue_triage_closure",
+]
+
+
+def test_category_share_before_after(
+    df_category_counts: pd.DataFrame,
+    categories: list[str] = MAIN_CATEGORIES,
+) -> pd.DataFrame:
+    """
+    project-payeeごとのカテゴリ構成比について、
+    支払い前後をWilcoxon符号付順位検定で比較する。
+
+    前後の全Issue数がともに1件以上ある対象だけを使用する。
+    """
+    rows = []
+
+    for category in categories:
+        group = df_category_counts[
+            df_category_counts[
+                "category"
+            ].eq(category)
+        ].copy()
+
+        # 前後どちらにもIssue作成活動がある人に限定
+        group = group[
+            group["before_total_issue_count"].gt(0)
+            & group["after_total_issue_count"].gt(0)
+        ].copy()
+
+        group = group[
+            group["before_category_share"].notna()
+            & group["after_category_share"].notna()
+        ].copy()
+
+        before = group[
+            "before_category_share"
+        ].astype(float)
+
+        after = group[
+            "after_category_share"
+        ].astype(float)
+
+        difference = after - before
+
+        n_equal = int(
+            difference.eq(0).sum()
+        )
+        n_increased = int(
+            difference.gt(0).sum()
+        )
+        n_decreased = int(
+            difference.lt(0).sum()
+        )
+
+        # 全員の差が0ならWilcoxonを実行できない
+        if difference.ne(0).sum() == 0:
+            statistic = 0.0
+            p_value = 1.0
+        else:
+            result = wilcoxon(
+                after,
+                before,
+                alternative="two-sided",
+                zero_method="wilcox",
+                method="auto",
+            )
+
+            statistic = float(
+                result.statistic
+            )
+            p_value = float(
+                result.pvalue
+            )
+
+        rows.append({
+            "category": category,
+            "n_project_payees": len(group),
+            "n_increased_share": n_increased,
+            "n_decreased_share": n_decreased,
+            "n_unchanged_share": n_equal,
+            "mean_before_share":
+                before.mean(),
+            "mean_after_share":
+                after.mean(),
+            "median_before_share":
+                before.median(),
+            "median_after_share":
+                after.median(),
+            "mean_share_difference":
+                difference.mean(),
+            "median_share_difference":
+                difference.median(),
+            "wilcoxon_statistic":
+                statistic,
+            "p_value":
+                p_value,
+        })
+
+    df_result = pd.DataFrame(rows)
+
+    # その分析条件内の6カテゴリでHolm補正
+    reject, adjusted_p, _, _ = multipletests(
+        df_result["p_value"],
+        alpha=0.05,
+        method="holm",
+    )
+
+    df_result[
+        "holm_adjusted_p_value"
+    ] = adjusted_p
+
+    df_result[
+        "significant_after_holm"
+    ] = reject
+
+    return (
+        df_result
+        .sort_values(
+            "holm_adjusted_p_value"
         )
         .reset_index(drop=True)
     )
