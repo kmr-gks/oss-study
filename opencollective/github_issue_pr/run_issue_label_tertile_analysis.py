@@ -719,7 +719,7 @@ def plot_category_bands(
     )
 
     fig, ax = plt.subplots(
-        figsize=(9.0, 4.8)
+        figsize=(6, 3.5)
     )
 
     left = np.zeros(
@@ -802,19 +802,6 @@ def plot_category_bands(
             else int(n_issues)
         )
 
-        ax.text(
-            1.01,
-            position,
-            (
-                f"projects = {n_projects:,}, "
-                f"issues = {n_issues:,}"
-            ),
-            va="center",
-            ha="left",
-            transform=ax.get_yaxis_transform(),
-            fontsize=8.5,
-        )
-
     ax.legend(
         loc="upper center",
         bbox_to_anchor=(
@@ -832,6 +819,8 @@ def plot_category_bands(
         top=0.96,
         bottom=0.32,
     )
+
+    fig.tight_layout()
 
     fig.savefig(
         output_path,
