@@ -326,7 +326,7 @@ op1の結果　ラベルを新規/メンテナンスに分類 before, afterで�
 
 fig5 delete、normalizeしたfig6で十分
 
-fig6 かっこいい図にしたい
+fig6 コミットの増加率も追加する、かっこいい図にしたい
 
 fig7 delete
 
