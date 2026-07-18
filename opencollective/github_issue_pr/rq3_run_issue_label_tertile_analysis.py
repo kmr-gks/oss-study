@@ -8,6 +8,9 @@ import numpy as np
 import pandas as pd
 from forex_python.converter import CurrencyRates
 from sqlalchemy import create_engine
+from itertools import combinations
+from scipy.stats import kruskal, mannwhitneyu
+from statsmodels.stats.multitest import multipletests
 
 from issue_label_classification import (
     classify_project_issue_labels,
@@ -1005,6 +1008,67 @@ def main():
         )
 
         # --------------------------------------------------
+        # カテゴリ割合の3群間検定
+        # --------------------------------------------------
+
+        (
+            df_project_category_ratios,
+            df_kruskal_results,
+            df_pairwise_results,
+        ) = run_category_ratio_statistical_tests(
+            df_issues=
+                df_issues_after,
+            df_categories=
+                df_categories,
+        )
+
+        print(
+            "\n===== Kruskal-Wallis tests "
+            "for project-level category ratios ====="
+        )
+
+        print(
+            df_kruskal_results
+            .to_string(index=False)
+        )
+
+        print(
+            "\n===== Pairwise Mann-Whitney U tests ====="
+        )
+
+        if df_pairwise_results.empty:
+            print(
+                "No category was significant after "
+                "Holm correction in the "
+                "Kruskal-Wallis tests."
+            )
+        else:
+            print(
+                df_pairwise_results
+                .to_string(index=False)
+            )
+
+        df_project_category_ratios.to_csv(
+            "project_issue_category_ratios_by_"
+            "development_spending_tertile.csv",
+            index=False,
+        )
+
+        df_kruskal_results.to_csv(
+            "issue_category_ratio_"
+            "kruskal_wallis_by_"
+            "development_spending_tertile.csv",
+            index=False,
+        )
+
+        df_pairwise_results.to_csv(
+            "issue_category_ratio_pairwise_"
+            "mannwhitney_by_development_"
+            "spending_tertile.csv",
+            index=False,
+        )
+
+        # --------------------------------------------------
         # 11. CSV保存
         # --------------------------------------------------
 
@@ -1213,6 +1277,692 @@ def build_target_projects_with_issues(
         )
         .reset_index(drop=True)
     )
+
+def build_project_category_ratios(
+    df_issues: pd.DataFrame,
+    df_categories: pd.DataFrame,
+) -> pd.DataFrame:
+    """
+    各プロジェクトについて、加入後12か月の全Issue数と
+    各カテゴリのIssue数・割合を計算する。
+
+    出力単位:
+        1 project × 1 category
+
+    category_ratio:
+        そのプロジェクトの該当カテゴリIssue数
+        / そのプロジェクトの全Issue数
+
+    1つのIssueが複数カテゴリに属することを許すため、
+    1プロジェクト内でcategory_ratioを全カテゴリについて
+    合計すると1を超える場合がある。
+    """
+    issue_id_columns = [
+        PROJECT_COL,
+        "repo_name",
+        "number",
+    ]
+
+    required_issue_columns = {
+        *issue_id_columns,
+        TERTILE_COL,
+    }
+
+    required_category_columns = {
+        *issue_id_columns,
+        TERTILE_COL,
+        "category",
+    }
+
+    missing_issue_columns = (
+        required_issue_columns
+        - set(df_issues.columns)
+    )
+
+    missing_category_columns = (
+        required_category_columns
+        - set(df_categories.columns)
+    )
+
+    if missing_issue_columns:
+        raise ValueError(
+            "df_issues is missing columns: "
+            f"{sorted(missing_issue_columns)}"
+        )
+
+    if missing_category_columns:
+        raise ValueError(
+            "df_categories is missing columns: "
+            f"{sorted(missing_category_columns)}"
+        )
+
+    # プロジェクトごとの全Issue数
+    df_project_totals = (
+        df_issues[
+            issue_id_columns
+            + [TERTILE_COL]
+        ]
+        .drop_duplicates(
+            subset=issue_id_columns
+        )
+        .groupby(
+            [
+                PROJECT_COL,
+                "repo_name",
+                TERTILE_COL,
+            ],
+            observed=True,
+            as_index=False,
+        )
+        .agg(
+            total_issue_count=(
+                "number",
+                "count",
+            )
+        )
+    )
+
+    # プロジェクト・カテゴリごとのIssue数
+    df_project_category_counts = (
+        df_categories[
+            issue_id_columns
+            + [
+                TERTILE_COL,
+                "category",
+            ]
+        ]
+        .drop_duplicates(
+            subset=(
+                issue_id_columns
+                + ["category"]
+            )
+        )
+        .groupby(
+            [
+                PROJECT_COL,
+                "repo_name",
+                TERTILE_COL,
+                "category",
+            ],
+            observed=True,
+            as_index=False,
+        )
+        .agg(
+            category_issue_count=(
+                "number",
+                "count",
+            )
+        )
+    )
+
+    # 全プロジェクト×全カテゴリを作成し、
+    # 該当カテゴリが0件のプロジェクトも残す
+    df_categories_master = pd.DataFrame({
+        "category": CATEGORY_ORDER
+    })
+
+    df_project_category_ratios = (
+        df_project_totals.assign(
+            _join_key=1
+        )
+        .merge(
+            df_categories_master.assign(
+                _join_key=1
+            ),
+            on="_join_key",
+            how="inner",
+        )
+        .drop(columns="_join_key")
+        .merge(
+            df_project_category_counts,
+            on=[
+                PROJECT_COL,
+                "repo_name",
+                TERTILE_COL,
+                "category",
+            ],
+            how="left",
+            validate="one_to_one",
+        )
+    )
+
+    df_project_category_ratios[
+        "category_issue_count"
+    ] = (
+        df_project_category_ratios[
+            "category_issue_count"
+        ]
+        .fillna(0)
+        .astype(int)
+    )
+
+    df_project_category_ratios[
+        "category_ratio"
+    ] = (
+        df_project_category_ratios[
+            "category_issue_count"
+        ]
+        / df_project_category_ratios[
+            "total_issue_count"
+        ]
+    )
+
+    return (
+        df_project_category_ratios
+        .sort_values(
+            [
+                "category",
+                TERTILE_COL,
+                PROJECT_COL,
+            ]
+        )
+        .reset_index(drop=True)
+    )
+
+def cliffs_delta(
+    x,
+    y,
+) -> float:
+    """
+    Cliff's deltaを計算する。
+
+    正:
+        xの方がyより大きい傾向
+
+    負:
+        xの方がyより小さい傾向
+    """
+    x = np.asarray(
+        pd.Series(x).dropna(),
+        dtype=float,
+    )
+
+    y = np.asarray(
+        pd.Series(y).dropna(),
+        dtype=float,
+    )
+
+    if len(x) == 0 or len(y) == 0:
+        return np.nan
+
+    difference_sum = 0
+
+    for x_value in x:
+        difference_sum += np.sum(
+            x_value > y
+        )
+
+        difference_sum -= np.sum(
+            x_value < y
+        )
+
+    return (
+        difference_sum
+        / (len(x) * len(y))
+    )
+
+
+def cliffs_delta_label(
+    delta: float,
+) -> str:
+    """
+    Cliff's deltaの絶対値を大きさへ変換する。
+    """
+    if pd.isna(delta):
+        return "NA"
+
+    absolute_delta = abs(delta)
+
+    if absolute_delta < 0.147:
+        return "negligible"
+
+    if absolute_delta < 0.330:
+        return "small"
+
+    if absolute_delta < 0.474:
+        return "medium"
+
+    return "large"
+
+def test_category_ratios_kruskal_wallis(
+    df_project_category_ratios: pd.DataFrame,
+    categories=None,
+) -> pd.DataFrame:
+    """
+    各カテゴリのproject-level ratioについて、
+    3つの開発支出額群をKruskal–Wallis検定で比較する。
+
+    カテゴリ数だけ検定するため、
+    p値にはHolm補正を適用する。
+    """
+    if categories is None:
+        categories = CATEGORY_ORDER
+
+    rows = []
+
+    for category in categories:
+        df_category = (
+            df_project_category_ratios[
+                df_project_category_ratios[
+                    "category"
+                ].eq(category)
+            ]
+        )
+
+        groups = {
+            label: (
+                df_category.loc[
+                    df_category[
+                        TERTILE_COL
+                    ].eq(label),
+                    "category_ratio",
+                ]
+                .dropna()
+                .astype(float)
+            )
+            for label in TERTILE_LABELS
+        }
+
+        all_groups_exist = all(
+            len(groups[label]) > 0
+            for label in TERTILE_LABELS
+        )
+
+        all_values_equal = (
+            df_category[
+                "category_ratio"
+            ].nunique(dropna=True)
+            <= 1
+        )
+
+        if (
+            not all_groups_exist
+            or all_values_equal
+        ):
+            statistic = np.nan
+            p_value = 1.0
+        else:
+            test_result = kruskal(
+                groups[TERTILE_LABELS[0]],
+                groups[TERTILE_LABELS[1]],
+                groups[TERTILE_LABELS[2]],
+            )
+
+            statistic = float(
+                test_result.statistic
+            )
+
+            p_value = float(
+                test_result.pvalue
+            )
+
+        total_n = sum(
+            len(group)
+            for group in groups.values()
+        )
+
+        n_groups = len(
+            TERTILE_LABELS
+        )
+
+        if (
+            pd.isna(statistic)
+            or total_n <= n_groups
+        ):
+            epsilon_squared = np.nan
+        else:
+            epsilon_squared = max(
+                (
+                    statistic
+                    - n_groups
+                    + 1
+                )
+                / (
+                    total_n
+                    - n_groups
+                ),
+                0.0,
+            )
+
+        row = {
+            "category": category,
+            "n_total": total_n,
+            "kruskal_h_statistic":
+                statistic,
+            "p_value":
+                p_value,
+            "epsilon_squared":
+                epsilon_squared,
+        }
+
+        for label in TERTILE_LABELS:
+            safe_label = (
+                label.lower()
+                .replace(" ", "_")
+                .replace("%", "pct")
+            )
+
+            group = groups[label]
+
+            row[
+                f"n_{safe_label}"
+            ] = len(group)
+
+            row[
+                f"mean_ratio_{safe_label}"
+            ] = group.mean()
+
+            row[
+                f"median_ratio_{safe_label}"
+            ] = group.median()
+
+            row[
+                f"q1_ratio_{safe_label}"
+            ] = group.quantile(0.25)
+
+            row[
+                f"q3_ratio_{safe_label}"
+            ] = group.quantile(0.75)
+
+            row[
+                f"n_zero_{safe_label}"
+            ] = int(
+                group.eq(0).sum()
+            )
+
+        rows.append(row)
+
+    df_result = pd.DataFrame(rows)
+
+    reject, adjusted_p_values, _, _ = (
+        multipletests(
+            df_result["p_value"],
+            alpha=0.05,
+            method="holm",
+        )
+    )
+
+    df_result[
+        "holm_adjusted_p_value"
+    ] = adjusted_p_values
+
+    df_result[
+        "significant_after_holm"
+    ] = reject
+
+    return (
+        df_result
+        .sort_values(
+            [
+                "holm_adjusted_p_value",
+                "category",
+            ]
+        )
+        .reset_index(drop=True)
+    )
+
+def test_category_ratios_pairwise_mannwhitney(
+    df_project_category_ratios: pd.DataFrame,
+    df_kruskal_results: pd.DataFrame,
+    categories=None,
+    only_significant_kruskal: bool = True,
+) -> pd.DataFrame:
+    """
+    カテゴリごとに3群間のMann–Whitney U検定を行う。
+
+    デフォルトでは、Holm補正後のKruskal–Wallis検定が
+    有意だったカテゴリだけを事後比較する。
+
+    各カテゴリ内の3比較についてHolm補正する。
+    """
+    if categories is None:
+        categories = CATEGORY_ORDER
+
+    if only_significant_kruskal:
+        significant_categories = set(
+            df_kruskal_results.loc[
+                df_kruskal_results[
+                    "significant_after_holm"
+                ],
+                "category",
+            ]
+        )
+
+        categories = [
+            category
+            for category in categories
+            if category in significant_categories
+        ]
+
+    group_pairs = list(
+        combinations(
+            TERTILE_LABELS,
+            2,
+        )
+    )
+
+    all_category_results = []
+
+    for category in categories:
+        df_category = (
+            df_project_category_ratios[
+                df_project_category_ratios[
+                    "category"
+                ].eq(category)
+            ]
+        )
+
+        category_rows = []
+
+        for group_a_label, group_b_label in (
+            group_pairs
+        ):
+            group_a = (
+                df_category.loc[
+                    df_category[
+                        TERTILE_COL
+                    ].eq(group_a_label),
+                    "category_ratio",
+                ]
+                .dropna()
+                .astype(float)
+            )
+
+            group_b = (
+                df_category.loc[
+                    df_category[
+                        TERTILE_COL
+                    ].eq(group_b_label),
+                    "category_ratio",
+                ]
+                .dropna()
+                .astype(float)
+            )
+
+            if (
+                len(group_a) == 0
+                or len(group_b) == 0
+            ):
+                u_statistic = np.nan
+                p_value = 1.0
+                delta = np.nan
+            elif (
+                pd.concat(
+                    [
+                        group_a,
+                        group_b,
+                    ]
+                )
+                .nunique()
+                <= 1
+            ):
+                u_statistic = np.nan
+                p_value = 1.0
+                delta = 0.0
+            else:
+                test_result = mannwhitneyu(
+                    group_a,
+                    group_b,
+                    alternative="two-sided",
+                    method="auto",
+                )
+
+                u_statistic = float(
+                    test_result.statistic
+                )
+
+                p_value = float(
+                    test_result.pvalue
+                )
+
+                # 正ならgroup_bの方が大きい
+                delta = cliffs_delta(
+                    group_b,
+                    group_a,
+                )
+
+            category_rows.append({
+                "category":
+                    category,
+                "group_a":
+                    group_a_label,
+                "group_b":
+                    group_b_label,
+                "n_group_a":
+                    len(group_a),
+                "n_group_b":
+                    len(group_b),
+                "mean_group_a":
+                    group_a.mean(),
+                "mean_group_b":
+                    group_b.mean(),
+                "median_group_a":
+                    group_a.median(),
+                "median_group_b":
+                    group_b.median(),
+                "q1_group_a":
+                    group_a.quantile(0.25),
+                "q1_group_b":
+                    group_b.quantile(0.25),
+                "q3_group_a":
+                    group_a.quantile(0.75),
+                "q3_group_b":
+                    group_b.quantile(0.75),
+                "mannwhitney_u":
+                    u_statistic,
+                "p_value":
+                    p_value,
+                "cliffs_delta_b_vs_a":
+                    delta,
+                "effect_size_label":
+                    cliffs_delta_label(
+                        delta
+                    ),
+            })
+
+        df_category_result = (
+            pd.DataFrame(
+                category_rows
+            )
+        )
+
+        reject, adjusted_p_values, _, _ = (
+            multipletests(
+                df_category_result[
+                    "p_value"
+                ],
+                alpha=0.05,
+                method="holm",
+            )
+        )
+
+        df_category_result[
+            "holm_adjusted_p_value"
+        ] = adjusted_p_values
+
+        df_category_result[
+            "significant_after_holm"
+        ] = reject
+
+        all_category_results.append(
+            df_category_result
+        )
+
+    if not all_category_results:
+        return pd.DataFrame(
+            columns=[
+                "category",
+                "group_a",
+                "group_b",
+                "n_group_a",
+                "n_group_b",
+                "mannwhitney_u",
+                "p_value",
+                "holm_adjusted_p_value",
+                "significant_after_holm",
+                "cliffs_delta_b_vs_a",
+                "effect_size_label",
+            ]
+        )
+
+    return (
+        pd.concat(
+            all_category_results,
+            ignore_index=True,
+        )
+        .sort_values(
+            [
+                "category",
+                "holm_adjusted_p_value",
+            ]
+        )
+        .reset_index(drop=True)
+    )
+
+def run_category_ratio_statistical_tests(
+    df_issues: pd.DataFrame,
+    df_categories: pd.DataFrame,
+):
+    """
+    project-level category ratioを作り、
+    Kruskal–Wallis検定と事後比較を実行する。
+    """
+    df_project_category_ratios = (
+        build_project_category_ratios(
+            df_issues=
+                df_issues,
+            df_categories=
+                df_categories,
+        )
+    )
+
+    df_kruskal_results = (
+        test_category_ratios_kruskal_wallis(
+            df_project_category_ratios=
+                df_project_category_ratios,
+            categories=
+                CATEGORY_ORDER,
+        )
+    )
+
+    df_pairwise_results = (
+        test_category_ratios_pairwise_mannwhitney(
+            df_project_category_ratios=
+                df_project_category_ratios,
+            df_kruskal_results=
+                df_kruskal_results,
+            categories=
+                CATEGORY_ORDER,
+            only_significant_kruskal=True,
+        )
+    )
+
+    return (
+        df_project_category_ratios,
+        df_kruskal_results,
+        df_pairwise_results,
+    )
+
 
 if __name__ == "__main__":
     main()
