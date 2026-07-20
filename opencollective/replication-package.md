@@ -2,10 +2,12 @@ TODO
 table IIIの値は単純合計をUSDと書いている
 
 methodology
-table I, TABLE III
+table I
 `python3 rq1_summary_dataset.py`
 
 rq1
+TABLE III
+`python3 rq1_tableIII.py`
 
 table IV
 table V
@@ -57,3 +59,6 @@ issue_category_composition_by_development_spending_tertile_12m.pdf
 table VII
 registration_issue_pr_wilcoxon_tests_holm_positive_before_only.csv
 
+
+
+table VIII?
