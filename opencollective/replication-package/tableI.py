@@ -1,6 +1,4 @@
-import api
 import pandas as pd
-from sqlalchemy import create_engine
 from duckdb_util import database_engine
 
 COLLECTIVES_SQL = "data/collectives.parquet"

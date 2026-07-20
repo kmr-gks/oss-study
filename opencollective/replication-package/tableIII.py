@@ -1,7 +1,4 @@
-
-import api
 import pandas as pd
-from sqlalchemy import create_engine
 from forex_python.converter import CurrencyRates
 from duckdb_util import database_engine
 
