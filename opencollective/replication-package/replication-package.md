@@ -78,5 +78,5 @@ table VII
 registration_issue_pr_wilcoxon_tests_holm_positive_before_only.csv
 
 
-
-table VIII?
+`python3 rq3_tableVIII.py`
+table VIII
