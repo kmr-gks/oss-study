@@ -35,6 +35,9 @@ table V
 table VI
 `python3 tableVI.py`
 
+table VIII
+`python3 tableVIII.py`
+
 `python3 rq1_cohen_kappa_score.py`
 methodologyのcohen kappa score
 
@@ -75,7 +78,3 @@ issue_category_composition_by_development_spending_tertile_12m.pdf
 
 table VII
 registration_issue_pr_wilcoxon_tests_holm_positive_before_only.csv
-
-
-`python3 rq3_tableVIII.py`
-table VIII

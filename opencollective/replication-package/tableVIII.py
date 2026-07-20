@@ -1,10 +1,8 @@
-import api
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from forex_python.converter import CurrencyRates
 from scipy.stats import kruskal, mannwhitneyu
-from sqlalchemy import create_engine
+from duckdb_util import database_engine
 
 
 PROJECT_COL = "project_slug"
@@ -58,16 +56,6 @@ WHERE repo_name IS NOT NULL
 
 def clean_text(series):
     return series.astype(str).str.strip().str.upper()
-
-
-def database_engine():
-    password = api.load_sql_password_from_credentials()
-
-    return create_engine(
-        f"postgresql+psycopg2://postgres:{password}"
-        "@localhost:5432/opencollective"
-    )
-
 
 def load_expenses(engine):
     df_expense = pd.read_sql(
