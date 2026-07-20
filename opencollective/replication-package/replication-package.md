@@ -20,7 +20,7 @@ rq1_labeling_1784samples2.py
 
 
 table I
-`python3 rq1_tableI.py`
+`python3 tableI.py`
 
 rq1
 TABLE III
