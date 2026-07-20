@@ -30,7 +30,7 @@ table IV
 `python3 tableIV.py`
 
 table V
-`python3 rq1_tableV.py`
+`python3 tableV.py`
 
 `python3 rq1_cohen_kappa_score.py`
 methodologyのcohen kappa score
