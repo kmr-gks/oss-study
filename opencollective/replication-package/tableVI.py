@@ -23,7 +23,6 @@ def normalize_name(value):
 engine = database_engine()
 
 try:
-    # Open CollectiveのプロジェクトとGitHubリポジトリの対応
     collectives = pd.read_sql(
         """
         SELECT slug AS project_slug, github_account
@@ -45,7 +44,6 @@ try:
         .str.replace("/", "-", regex=False)
     )
 
-    # 開発向けとして分類された個人への支出
     payments = pd.read_sql(
         """
         SELECT
@@ -78,7 +76,6 @@ try:
         payments["to_account_slug"].map(normalize_name)
     )
 
-    # プロジェクト・受取人ごとの最初の開発向け支出
     first_payments = (
         payments
         .groupby(
@@ -96,7 +93,6 @@ try:
         )
     )
 
-    # コミット履歴
     commits = pd.read_sql(
         """
         SELECT
@@ -123,7 +119,6 @@ try:
         commits["author_name"].map(normalize_name)
     )
 
-    # コミットにOpen Collectiveのproject_slugを付与
     project_commits = commits.merge(
         collectives[["project_slug", "repo_name"]],
         on="repo_name",
@@ -137,7 +132,6 @@ try:
         "author_name_norm",
     ]
 
-    # to_account_nameとcommit authorの一致
     name_matches = first_payments.merge(
         project_commits[commit_columns],
         left_on=[
@@ -151,7 +145,6 @@ try:
         how="inner",
     )
 
-    # to_account_slugとcommit authorの一致
     slug_matches = first_payments.merge(
         project_commits[commit_columns],
         left_on=[
@@ -170,7 +163,6 @@ try:
         ignore_index=True,
     )
 
-    # 同じコミットがnameとslugの両方で一致した場合の重複を除去
     matches = matches.drop_duplicates(
         subset=[
             "project_slug",
