@@ -1,4 +1,13 @@
+methodology
+table I
+`python3 rq1_summary_dataset.py`
+
 rq1
+
+table III
+table IV
+table V
+
 `python3 rq1_cohen_kappa_score.py`
 methodologyのcohen kappa score
 
