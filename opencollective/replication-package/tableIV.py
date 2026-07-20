@@ -1,6 +1,7 @@
 import pandas as pd
 from forex_python.converter import CurrencyRates
 from duckdb_util import database_engine
+from output_util import TABLES_DIR
 
 BASE_CURRENCY = "USD"
 DB_NAME = "opencollective"
@@ -43,6 +44,6 @@ result = df.groupby("kind").agg(
 ).T
 
 print(result.to_string(float_format=lambda x: f"{x:,.2f}"))
-result.to_csv("table_iv.csv")
+result.to_csv(TABLES_DIR / "table_iv.csv", index=False)
 
 engine.dispose()

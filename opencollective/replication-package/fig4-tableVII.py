@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.stats import wilcoxon
 from statsmodels.stats.multitest import multipletests
+from output_util import FIGURES_DIR, TABLES_DIR
 
 from duckdb_util import database_engine
 
@@ -468,14 +469,14 @@ def main():
     table = format_tests_for_table(tests)
 
     table.to_csv(
-        "table_vii.csv",
+        TABLES_DIR / "table_vii.csv",
         index=False,
         float_format="%.3f",
     )
 
     save_median_growth_plot(
         growth,
-        "Fig4.pdf",
+        FIGURES_DIR / "Fig4.pdf",
     )
 
 

@@ -1,5 +1,6 @@
 import pandas as pd
 from duckdb_util import database_engine
+from output_util import TABLES_DIR
 
 COLLECTIVES_SQL = "data/collectives.parquet"
 COLLECTIVE_TRANSACTIONS_SQL = "data/collective_transactions.parquet"
@@ -33,7 +34,7 @@ df = pd.read_sql(sql_query, engine)
 results.append(["Issue and pull request records", df["count"].values[0]])
 
 result = pd.DataFrame(results, columns=["Item", "Count"])
-result.to_csv("table_i.csv", index=False)
+result.to_csv(TABLES_DIR / "table_i.csv", index=False)
 
 print("TABLE I")
 print(result.to_string(index=False))

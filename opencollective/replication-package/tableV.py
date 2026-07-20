@@ -1,6 +1,7 @@
 import pandas as pd
 from forex_python.converter import CurrencyRates
 from sqlalchemy import bindparam, text
+from output_util import TABLES_DIR
 
 from duckdb_util import database_engine
 
@@ -138,7 +139,7 @@ try:
     )
 
     result.to_csv(
-        "table_v.csv",
+        TABLES_DIR / "table_v.csv",
         index=False,
         float_format="%.2f",
     )

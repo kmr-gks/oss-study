@@ -2,15 +2,14 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from forex_python.converter import CurrencyRates
+from output_util import FIGURES_DIR
 
 from duckdb_util import database_engine
 
 
 MONEY_TABLE = "public.collective_transactions"
 BASE_CURRENCY = "USD"
-OUTPUT_PDF = (
-    "Fig1.pdf"
-)
+OUTPUT_PDF = FIGURES_DIR / "Fig1.pdf"
 
 def load_contributions():
     engine = database_engine()

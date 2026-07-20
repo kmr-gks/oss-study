@@ -7,6 +7,7 @@ import pandas as pd
 from forex_python.converter import CurrencyRates
 from scipy.stats import kruskal
 from statsmodels.stats.multitest import multipletests
+from output_util import FIGURES_DIR
 
 from duckdb_util import database_engine
 
@@ -534,7 +535,7 @@ def save_plot(summary):
     )
 
     fig.tight_layout()
-    fig.savefig("Fig5.pdf", bbox_inches="tight")
+    fig.savefig(FIGURES_DIR / "Fig5.pdf", bbox_inches="tight")
     plt.close(fig)
 
 

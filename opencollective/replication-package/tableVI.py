@@ -1,5 +1,6 @@
 import pandas as pd
 from duckdb_util import database_engine
+from output_util import TABLES_DIR
 
 WINDOW_MONTHS = 12
 
@@ -246,7 +247,7 @@ try:
     )
 
     result.to_csv(
-        "table_vi.csv",
+        TABLES_DIR / "table_vi.csv",
         index=False,
         float_format="%.3f",
     )

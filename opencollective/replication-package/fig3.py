@@ -2,19 +2,14 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from forex_python.converter import CurrencyRates
+from output_util import FIGURES_DIR
 
 from duckdb_util import database_engine
 
 
 MONEY_TABLE = "public.collective_transactions"
 BASE_CURRENCY = "USD"
-OUTPUT_CSV = (
-    "pq1_money_flow_expense_"
-    "from_account_type_to_account_type_usd.csv"
-)
-OUTPUT_PDF = (
-    "Fig3.pdf"
-)
+OUTPUT_PDF = FIGURES_DIR / "Fig3.pdf"
 
 
 def load_expenses():
@@ -130,8 +125,6 @@ def main():
         aggfunc="sum",
         fill_value=0,
     )
-
-    flow_table.to_csv(OUTPUT_CSV)
 
     log_values = np.log1p(flow_table.values)
 

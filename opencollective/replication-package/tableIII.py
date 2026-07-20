@@ -1,6 +1,7 @@
 import pandas as pd
 from forex_python.converter import CurrencyRates
 from duckdb_util import database_engine
+from output_util import TABLES_DIR
 
 BASE_CURRENCY = "USD"
 DB_NAME = "opencollective"
@@ -40,7 +41,7 @@ if len(result) > 5:
     result = pd.concat([result.iloc[:5], others], ignore_index=True)
 
 result["Amount_USD"] = result["Amount_USD"] / 1e6
-result.to_csv("table_iii.csv", index=False)
+result.to_csv(TABLES_DIR / "table_iii.csv", index=False)
 
 print("TABLE III")
 print(result.to_string(index=False))
