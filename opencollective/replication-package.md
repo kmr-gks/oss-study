@@ -10,6 +10,8 @@ TABLE III
 `python3 rq1_tableIII.py`
 
 table IV
+`python3 rq1_tableIV.py`
+
 table V
 
 `python3 rq1_cohen_kappa_score.py`
