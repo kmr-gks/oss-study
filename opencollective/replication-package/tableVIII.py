@@ -3,6 +3,7 @@ import pandas as pd
 from forex_python.converter import CurrencyRates
 from scipy.stats import kruskal, mannwhitneyu
 from duckdb_util import database_engine
+from output_util import TABLES_DIR
 
 
 PROJECT_COL = "project_slug"
@@ -1095,7 +1096,7 @@ def analyze_window(
         )
     )
 
-    summary_filename = ("table_viii.csv")
+    summary_filename = (TABLES_DIR / "table_viii.csv")
 
     summary.to_csv(
         summary_filename,
