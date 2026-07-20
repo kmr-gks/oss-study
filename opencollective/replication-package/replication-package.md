@@ -32,6 +32,9 @@ table IV
 table V
 `python3 tableV.py`
 
+table VI
+`python3 tableVI.py`
+
 `python3 rq1_cohen_kappa_score.py`
 methodologyのcohen kappa score
 
@@ -45,10 +48,6 @@ methodologyの1784件のサンプルに支出ラベルを付け、多値分類�
 `python3 pq1_overview.py`
 rq1 fig1
 rq2 fig2,fig3
-
-rq2
-`python3 rq2_tableVI.py`
-table VI
 
 `python3 rq2_impact_of_joining_openc.py`
 no use

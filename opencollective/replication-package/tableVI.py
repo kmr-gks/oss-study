@@ -1,6 +1,5 @@
-import api
 import pandas as pd
-from sqlalchemy import create_engine
+from duckdb_util import database_engine
 
 WINDOW_MONTHS = 12
 
@@ -21,11 +20,7 @@ def normalize_name(value):
     return value
 
 
-engine = create_engine(
-    "postgresql+psycopg2://postgres:"
-    f"{api.load_sql_password_from_credentials()}"
-    "@localhost:5432/opencollective"
-)
+engine = database_engine()
 
 try:
     # Open CollectiveのプロジェクトとGitHubリポジトリの対応
