@@ -41,16 +41,14 @@ methodologyのランダムに1784件のサンプルを抽出するコード
 `python3 rq1_labeling_1784samples.py`
 methodologyの1784件のサンプルに支出ラベルを付け、多値分類するコード
 
-`python3 rq1_receive_money_and_start_dev.py`
-table VI
 
 `python3 pq1_overview.py`
 rq1 fig1
 rq2 fig2,fig3
 
 rq2
-`python3 rq2_commit_change_by_dev_count_ratio.py`
-
+`python3 rq2_tableVI.py`
+table VI
 
 `python3 rq2_impact_of_joining_openc.py`
 no use
