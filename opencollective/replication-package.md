@@ -1,10 +1,12 @@
+TODO
+table IIIの値は単純合計をUSDと書いている
+
 methodology
-table I
+table I, TABLE III
 `python3 rq1_summary_dataset.py`
 
 rq1
 
-table III
 table IV
 table V
 
