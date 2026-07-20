@@ -13,6 +13,7 @@ table IV
 `python3 rq1_tableIV.py`
 
 table V
+`python3 rq1_tableV.py`
 
 `python3 rq1_cohen_kappa_score.py`
 methodologyのcohen kappa score
