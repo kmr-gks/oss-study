@@ -1,5 +1,5 @@
 import pandas as pd
-from sklearn.metrics import cohen_kappa_score, confusion_matrix, classification_report
+from sklearn.metrics import cohen_kappa_score
 
 # =========================
 # 設定
