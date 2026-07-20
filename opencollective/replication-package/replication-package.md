@@ -38,6 +38,15 @@ table VI
 table VIII
 `python3 tableVIII.py`
 
+Fig1
+`python3 fig1.py`
+
+Fig2
+`python3 fig2.py`
+
+Fig3
+`python3 fig3.py`
+
 Fig5
 `python3 fig5.py`
 
@@ -50,10 +59,6 @@ methodologyのランダムに1784件のサンプルを抽出するコード
 `python3 rq1_labeling_1784samples.py`
 methodologyの1784件のサンプルに支出ラベルを付け、多値分類するコード
 
-
-`python3 pq1_overview.py`
-rq1 fig1
-rq2 fig2,fig3
 
 `python3 rq2_impact_of_joining_openc.py`
 no use
