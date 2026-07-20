@@ -8,10 +8,6 @@ from duckdb_util import database_engine
 
 MONEY_TABLE = "public.collective_transactions"
 BASE_CURRENCY = "USD"
-OUTPUT_CSV = (
-    "pq1_yearly_money_"
-    "contributed_to_open_source_usd.csv"
-)
 OUTPUT_PDF = (
     "Fig1.pdf"
 )
@@ -131,11 +127,6 @@ def main():
             ),
         )
         .sort_values("year")
-    )
-
-    yearly.to_csv(
-        OUTPUT_CSV,
-        index=False,
     )
 
     fig, ax = plt.subplots(

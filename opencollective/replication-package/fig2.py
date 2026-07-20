@@ -8,10 +8,6 @@ from duckdb_util import database_engine
 
 MONEY_TABLE = "public.collective_transactions"
 BASE_CURRENCY = "USD"
-OUTPUT_CSV = (
-    "pq1_money_flow_contribution_"
-    "from_account_type_to_account_type_usd.csv"
-)
 OUTPUT_PDF = (
     "Fig2.pdf"
 )
@@ -130,8 +126,6 @@ def main():
         aggfunc="sum",
         fill_value=0,
     )
-
-    flow_table.to_csv(OUTPUT_CSV)
 
     log_values = np.log1p(flow_table.values)
 
