@@ -27,7 +27,7 @@ TABLE III
 `python3 tableIII.py`
 
 table IV
-`python3 rq1_tableIV.py`
+`python3 tableIV.py`
 
 table V
 `python3 rq1_tableV.py`

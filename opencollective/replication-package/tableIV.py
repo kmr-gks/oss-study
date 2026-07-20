@@ -2,6 +2,7 @@ import api
 import pandas as pd
 from sqlalchemy import create_engine
 from forex_python.converter import CurrencyRates
+from duckdb_util import database_engine
 
 BASE_CURRENCY = "USD"
 DB_NAME = "opencollective"
@@ -17,9 +18,7 @@ def fetch_rates(currencies):
             rates[currency] = None
     return rates
 
-engine = create_engine(
-    f"postgresql+psycopg2://postgres:{api.load_sql_password_from_credentials()}@localhost:5432/{DB_NAME}"
-)
+engine = database_engine()
 
 sql_query = """
 SELECT kind, amount_value, amount_currency
