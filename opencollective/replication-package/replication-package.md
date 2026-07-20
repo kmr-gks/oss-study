@@ -10,7 +10,7 @@ data2.csv
 rq1_cohen_kappa_score.py
 
 2. 1784件のデータを2回分抽出する
-rq1_random_1784sampling.py
+rq1_random_1784sampling.py no use
 正解率計算
 rq1_accuracy_calculation.py
 
@@ -37,6 +37,9 @@ table VI
 
 table VIII
 `python3 tableVIII.py`
+
+Fig5
+`python3 fig5.py`
 
 `python3 rq1_cohen_kappa_score.py`
 methodologyのcohen kappa score
@@ -71,9 +74,6 @@ no use
 fig4
 github_activity_analysis/median_growth_rate_by_window.pdf
 
-`python3 rq3_run_issue_label_tertile_analysis.py`
-fig5, kruskal-wallis test
-issue_category_composition_by_development_spending_tertile_12m.pdf
 
 
 table VII
