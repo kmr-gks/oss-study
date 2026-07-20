@@ -35,6 +35,9 @@ table V
 table VI
 `python3 tableVI.py`
 
+table VII
+`python3 fig4-tableVII.py`
+
 table VIII
 `python3 tableVIII.py`
 
@@ -46,6 +49,9 @@ Fig2
 
 Fig3
 `python3 fig3.py`
+
+Fig4
+`python3 fig4-tableVII.py`
 
 Fig5
 `python3 fig5.py`
