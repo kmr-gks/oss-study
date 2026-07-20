@@ -1,0 +1,11 @@
+pandas
+numpy
+matplotlib
+scipy
+statsmodels
+scikit-learn
+SQLAlchemy
+duckdb
+duckdb-engine
+pyarrow
+forex-python
