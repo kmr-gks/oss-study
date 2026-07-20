@@ -3,6 +3,7 @@ import api
 import pandas as pd
 from sqlalchemy import create_engine
 from forex_python.converter import CurrencyRates
+from duckdb_util import database_engine
 
 BASE_CURRENCY = "USD"
 DB_NAME = "opencollective"
@@ -18,9 +19,7 @@ def fetch_current_exchange_rates_to_usd(currencies):
             rates[currency] = 0
     return rates
 
-engine = create_engine(
-    f"postgresql+psycopg2://postgres:{api.load_sql_password_from_credentials()}@localhost:5432/{DB_NAME}"
-)
+engine = database_engine()
 
 sql_query = """
 SELECT kind, amount_currency, SUM(amount_value) AS amount, COUNT(*) AS count
@@ -48,4 +47,3 @@ result.to_csv("table_iii.csv", index=False)
 
 print("TABLE III")
 print(result.to_string(index=False))
-engine.dispose()
