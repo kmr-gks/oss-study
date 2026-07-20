@@ -1,7 +1,24 @@
 TODO
-table IIIの値は単純合計をUSDと書いている
 
 methodology
+
+1. 381件のデータ2回分(手動ラベリング結果、LLMラベリング結果)
+data1.csv
+data2.csv
+
+カッパ係数計算
+rq1_cohen_kappa_score.py
+
+2. 1784件のデータを2回分抽出する
+rq1_random_1784sampling.py
+正解率計算
+rq1_accuracy_calculation.py
+
+3. 2つの1784件のデータに対してラベリングを行う
+rq1_labeling_1784samples.py
+rq1_labeling_1784samples2.py
+
+
 table I
 `python3 rq1_summary_dataset.py`
 

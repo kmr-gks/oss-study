@@ -1,7 +1,7 @@
 import pandas as pd
 
-file1 = "predictions_3rd_2026-06-07_23-38-28.csv"
-file2 = "predictions_4th_2026-06-08_14-27-03.csv"
+file1 = "data3.csv"
+file2 = "data4.csv"
 
 df1 = pd.read_csv(file1)
 df2 = pd.read_csv(file2)
@@ -16,8 +16,6 @@ label_counts = (
     .rename_axis("predicted_label")
     .reset_index(name="count")
 )
-
-print(label_counts)
 
 label_counts["percentage"] = (
     label_counts["count"] / label_counts["count"].sum() * 100

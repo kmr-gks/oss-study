@@ -8,27 +8,32 @@ engine = create_engine(
 )
 
 query = """
-SELECT
-  id,
+  SELECT
+    id,
+    project_slug,
     project_name,
-  created_at,
-  amount_value,
-  from_account_type,
-  to_account_type,
-  to_account_name,
-  expense_type,
-  expense_description,
-  expense_tags,
-  description
-FROM collective_transactions
-WHERE kind = 'EXPENSE' and amount_currency = 'USD'
-ORDER BY random()
+    created_at,
+    amount_value,
+    amount_currency,
+    from_account_type,
+    to_account_type,
+    to_account_name,
+    expense_type,
+    expense_description,
+    expense_tags,
+    description
+  FROM collective_transactions
+  WHERE kind = 'EXPENSE' and amount_currency = 'USD'
+  ORDER BY random()
 """
 
 df_sql = pd.read_sql(query, engine)
 
 # 既存ラベル済みデータ
-df_csv = pd.read_csv("expenses_random_order_v2.csv")[["expense_description"]]
+#2nd dataも除外する
+df_csv = pd.read_csv("data1.csv")[["expense_description"]]
+df_csv2 = pd.read_csv("data2.csv")[["expense_description"]]
+df_csv = pd.concat([df_csv, df_csv2], ignore_index=True)
 
 # 欠損除外
 df_sql = df_sql.dropna(subset=["expense_description"])
@@ -46,12 +51,18 @@ df_new_candidates = df_sql[
 
 # ランダムサンプリング
 df_new_sample = df_new_candidates.sample(
-    n=381,
+    n=1784*2,
     random_state=42
 ).reset_index(drop=True)
 
 # 保存
-df_new_sample.to_csv(
-    "expenses_random_order_rp_3.csv",
-    index=False
+df_new_sample1 = df_new_sample.iloc[:1784]
+df_new_sample2 = df_new_sample.iloc[1784:]
+df_new_sample1.to_csv(
+    "data_random_order_3rd.csv",
+    index=False,
+)
+df_new_sample2.to_csv(
+    "data_random_order_4th.csv",
+    index=False,
 )
