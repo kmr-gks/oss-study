@@ -26,3 +26,5 @@ opencollective/out.txt
 
 !opencollective/expenses_random_order_v1.csv
 !opencollective/expenses_random_order_v2.csv
+
+*.parquet
