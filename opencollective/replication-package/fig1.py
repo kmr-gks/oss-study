@@ -5,6 +5,7 @@ from forex_python.converter import CurrencyRates
 from output_util import FIGURES_DIR
 
 from duckdb_util import database_engine
+from transaction_util import KIND_TO_TYPE
 
 
 MONEY_TABLE = "public.collective_transactions"
@@ -23,6 +24,9 @@ def load_contributions():
                 amount_currency
             FROM {MONEY_TABLE}
             WHERE kind = 'CONTRIBUTION'
+              -- Keep only the receiving side of each double-entry
+              -- record so that the same transfer is not counted twice.
+              AND type = '{KIND_TO_TYPE["CONTRIBUTION"]}'
               AND created_at IS NOT NULL
               AND amount_value IS NOT NULL
               AND amount_currency IS NOT NULL
@@ -126,6 +130,24 @@ def main():
             ),
         )
         .sort_values("year")
+    )
+
+    print("===== Yearly contribution amount (USD) =====")
+    print(
+        yearly.to_string(
+            index=False,
+            formatters={
+                "total_contributed_usd":
+                    lambda value: f"{value:,.2f}",
+                "n_transactions":
+                    lambda value: f"{value:,}",
+            },
+        )
+    )
+    print(
+        "Total: "
+        f"{yearly['total_contributed_usd'].sum():,.2f} USD "
+        f"({yearly['n_transactions'].sum():,} transactions)"
     )
 
     fig, ax = plt.subplots(

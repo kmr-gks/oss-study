@@ -371,7 +371,10 @@ def save_median_growth_plot(growth, output_path):
         )
     )
 
-    fig, ax = plt.subplots(figsize=(5, 4.5))
+    fig, ax = plt.subplots(
+        figsize=(6.3, 3),
+        layout="constrained",
+    )
 
     for metric, label in METRICS.items():
         metric_data = (
@@ -403,13 +406,16 @@ def save_median_growth_plot(growth, output_path):
     ax.set_ylabel("Median growth rate (%)")
     ax.grid(True, alpha=0.3)
     ax.legend(
-        loc="lower center",
-        bbox_to_anchor=(0.5, -0.5),
-        ncol=2,
+        loc="center left",
+        bbox_to_anchor=(1.02, 0.5),
+        ncol=1,
     )
 
-    fig.tight_layout()
-    fig.savefig(output_path, bbox_inches="tight")
+    fig.savefig(
+        output_path,
+        bbox_inches="tight",
+        pad_inches=0.02,
+    )
     plt.close(fig)
 
 def format_tests_for_table(tests):

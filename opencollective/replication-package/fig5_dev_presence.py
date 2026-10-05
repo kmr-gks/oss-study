@@ -371,7 +371,10 @@ def save_plot(summary):
         .T.to_string(float_format=lambda value: f"{value:.3f}")
     )
 
-    fig, ax = plt.subplots(figsize=(6, 3))
+    fig, ax = plt.subplots(
+        figsize=(6.3, 2.3),
+        layout="constrained",
+    )
     left = np.zeros(len(plot_data))
 
     for category in CATEGORY_ORDER:
@@ -398,17 +401,17 @@ def save_plot(summary):
     ax.grid(axis="x", linestyle=":", alpha=0.6)
     ax.set_axisbelow(True)
     ax.legend(
-        loc="upper center",
-        bbox_to_anchor=(0.5, -0.25),
-        ncol=3,
+        loc="center left",
+        bbox_to_anchor=(1.02, 0.5),
+        ncol=1,
         frameon=False,
         fontsize=8,
     )
 
-    fig.tight_layout()
     fig.savefig(
-        FIGURES_DIR / "Fig5_dev_presence.pdf",
+        FIGURES_DIR / "issue_category_composition.pdf",
         bbox_inches="tight",
+        pad_inches=0.02,
     )
     plt.close(fig)
 
