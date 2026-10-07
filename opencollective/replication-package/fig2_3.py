@@ -1,3 +1,4 @@
+import matplotlib
 import numpy as np
 import matplotlib.pyplot as plt
 from output_util import FIGURES_DIR
@@ -20,6 +21,8 @@ def build_flow_table(df):
 
 
 def main():
+    matplotlib.rcParams['pdf.fonttype'] = 42
+    matplotlib.rcParams['ps.fonttype'] = 42
     contribution_table = build_flow_table(
         convert_to_usd(load_contributions())
     )
