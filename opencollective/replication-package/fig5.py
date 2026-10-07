@@ -10,6 +10,7 @@ from statsmodels.stats.multitest import multipletests
 from output_util import FIGURES_DIR
 
 from duckdb_util import database_engine
+from transaction_util import KIND_TO_TYPE
 
 
 WINDOW_MONTHS = 12
@@ -74,7 +75,7 @@ def normalize_label(value):
 
 def load_data(engine):
     expenses = pd.read_sql(
-        """
+        f"""
         SELECT
             project_slug,
             amount_value,
@@ -82,6 +83,9 @@ def load_data(engine):
             is_development
         FROM public.collective_transactions
         WHERE kind = 'EXPENSE'
+          -- Keep only the paying side of each double-entry
+          -- record so that the same expense is not counted twice.
+          AND type = '{KIND_TO_TYPE["EXPENSE"]}'
           AND project_slug IS NOT NULL
           AND amount_value IS NOT NULL
           AND amount_currency IS NOT NULL

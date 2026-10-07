@@ -3,6 +3,7 @@ import pandas as pd
 from forex_python.converter import CurrencyRates
 from scipy.stats import kruskal, mannwhitneyu
 from duckdb_util import database_engine
+from transaction_util import KIND_TO_TYPE
 from output_util import TABLES_DIR
 
 
@@ -18,7 +19,7 @@ SPEND_TERTILE_LABELS = [
     "Top 33%",
 ]
 
-EXPENSE_SQL = """
+EXPENSE_SQL = f"""
 SELECT
     id AS expense_id,
     project_slug,
@@ -27,6 +28,9 @@ SELECT
     is_development
 FROM public.collective_transactions
 WHERE kind = 'EXPENSE'
+  -- Keep only the paying side of each double-entry
+  -- record so that the same expense is not counted twice.
+  AND type = '{KIND_TO_TYPE["EXPENSE"]}'
   AND project_slug IS NOT NULL
   AND amount_value IS NOT NULL
   AND amount_currency IS NOT NULL
