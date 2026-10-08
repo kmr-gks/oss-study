@@ -97,6 +97,16 @@ so PostgreSQL does not need to be installed.
 
 `table4_expense_purposes.py` combines `data3.csv` and `data4.csv` and keeps the records with a confidence score of at least 0.90.
 
+### 4.3 LLM prompts (`prompts/`)
+
+| File | Model | Used for |
+|---|---|---|
+| `prompts/expense_purpose_prompt.txt` | GPT-5.4 | Expense-purpose classification into the seven categories of Table 1 (`data2.csv`, `data3.csv`, `data4.csv`) |
+| `prompts/development_binary_prompt.txt` | GPT-5.4 mini | Binary classification (development vs. others) stored as `is_development` in `data/collective_transactions.parquet` |
+
+`{description}` in each prompt is replaced by the expense description. The LLM returns a JSON object with a label,
+a confidence score, and a short reason. The prompts were taken verbatim from the scripts that produced the data.
+
 ## 5. Output format
 
 * Tables are written as CSV (UTF-8, comma-separated, one header row, no index column).
