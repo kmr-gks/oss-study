@@ -7,7 +7,7 @@ from statsmodels.stats.multitest import multipletests
 from output_util import FIGURES_DIR, TABLES_DIR
 
 from duckdb_util import database_engine
-from fig5 import (
+from issue_category_util import (
     CATEGORY_KEYS,
     CATEGORY_LABELS,
     CATEGORY_ORDER,
@@ -16,7 +16,7 @@ from fig5 import (
     load_data,
     normalize_label,
 )
-from tableVIII import cliffs_delta, effect_size_label
+from commit_growth_util import cliffs_delta, effect_size_label
 
 
 GROUP_COL = "development_spend_presence"
@@ -343,10 +343,23 @@ def run_mannwhitney(ratios):
         )
     )
 
-    results.to_csv(
-        TABLES_DIR / "fig5_dev_presence_tests.csv",
+    results.rename(
+        columns={
+            "Category": "category",
+            "N no dev.": "n_no_dev",
+            "N dev.": "n_dev",
+            "Mean ratio no dev.": "mean_ratio_no_dev",
+            "Mean ratio dev.": "mean_ratio_dev",
+            "U": "u_statistic",
+            "p-value": "p_value",
+            "Cliff's delta": "cliffs_delta",
+            "Effect size": "effect_size",
+            "Holm-adjusted p-value": "p_value_holm",
+            "Significant": "significant",
+        }
+    ).to_csv(
+        TABLES_DIR / "fig2_category_tests.csv",
         index=False,
-        float_format="%.6f",
     )
 
 
@@ -410,7 +423,7 @@ def save_plot(summary):
     )
 
     fig.savefig(
-        FIGURES_DIR / "issue_category_composition.pdf",
+        FIGURES_DIR / "fig2_issue_categories.pdf",
         bbox_inches="tight",
         pad_inches=0.02,
     )
@@ -431,7 +444,30 @@ def main():
     issues = build_projects(expenses, collectives, issues)
     categories = classify_issues(issues)
 
-    save_plot(build_category_summary(categories))
+    summary = build_category_summary(categories)
+    shares = summary.rename(
+        columns={GROUP_COL: "group", "n": "n_assignments"}
+    )
+    shares["category"] = shares["category"].astype(str).map(CATEGORY_LABELS)
+    shares.to_csv(
+        TABLES_DIR / "fig2_category_shares.csv",
+        index=False,
+    )
+
+    sample_sizes = pd.DataFrame({
+        "projects_with_issues": (
+            issues[["project_slug", "repo_name", GROUP_COL]]
+            .drop_duplicates()[GROUP_COL]
+            .value_counts()
+        ),
+        "issues": issues[GROUP_COL].value_counts(),
+    }).rename_axis("group").reset_index()
+    sample_sizes.to_csv(
+        TABLES_DIR / "fig2_sample_sizes.csv",
+        index=False,
+    )
+
+    save_plot(summary)
 
     ratios = build_project_category_ratios(
         issues,

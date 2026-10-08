@@ -1,15 +1,21 @@
+"""
+Shared helpers for Fig. 1 (money flow by account type).
+
+Loads CONTRIBUTION and EXPENSE transactions (one side of each double-entry
+record) and converts their amounts to USD with the fixed exchange rates.
+This module is imported by fig1_money_flow.py and is not run directly.
+"""
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from forex_python.converter import CurrencyRates
-from output_util import FIGURES_DIR
 
 from duckdb_util import database_engine
+from transaction_util import KIND_TO_TYPE, get_exchange_rates
 
 
 MONEY_TABLE = "public.collective_transactions"
 BASE_CURRENCY = "USD"
-OUTPUT_PDF = FIGURES_DIR / "Fig2.pdf"
 
 
 def load_contributions():
@@ -25,6 +31,38 @@ def load_contributions():
                 to_account_type
             FROM {MONEY_TABLE}
             WHERE kind = 'CONTRIBUTION'
+              -- Keep only the receiving side of each double-entry
+              -- record so that the same transfer is not counted twice.
+              AND type = '{KIND_TO_TYPE["CONTRIBUTION"]}'
+              AND amount_value IS NOT NULL
+              AND amount_currency IS NOT NULL
+              AND from_account_type IS NOT NULL
+              AND to_account_type IS NOT NULL
+            """,
+            engine,
+        )
+    finally:
+        engine.dispose()
+
+    return df
+
+
+def load_expenses():
+    engine = database_engine()
+
+    try:
+        df = pd.read_sql(
+            f"""
+            SELECT
+                amount_value,
+                amount_currency,
+                from_account_type,
+                to_account_type
+            FROM {MONEY_TABLE}
+            WHERE kind = 'EXPENSE'
+              -- Keep only the paying side of each double-entry
+              -- record so that the same transfer is not counted twice.
+              AND type = '{KIND_TO_TYPE["EXPENSE"]}'
               AND amount_value IS NOT NULL
               AND amount_currency IS NOT NULL
               AND from_account_type IS NOT NULL
@@ -80,23 +118,9 @@ def convert_to_usd(df):
         df["amount_original"].gt(0)
     ].copy()
 
-    converter = CurrencyRates()
-    rates = {}
-
-    for currency in sorted(
+    rates = get_exchange_rates(
         df["amount_currency"].dropna().unique()
-    ):
-        try:
-            rates[currency] = (
-                1.0
-                if currency == BASE_CURRENCY
-                else converter.get_rate(
-                    currency,
-                    BASE_CURRENCY,
-                )
-            )
-        except Exception:
-            rates[currency] = np.nan
+    )
 
     df["exchange_rate_to_usd"] = (
         df["amount_currency"].map(rates)
@@ -112,65 +136,3 @@ def convert_to_usd(df):
     )
 
     return df
-
-
-def main():
-    df = load_contributions()
-    df = convert_to_usd(df)
-
-    flow_table = df.pivot_table(
-        index="from_account_type",
-        columns="to_account_type",
-        values="amount_usd",
-        aggfunc="sum",
-        fill_value=0,
-    )
-
-    log_values = np.log1p(flow_table.values)
-
-    fig, ax = plt.subplots(
-        figsize=(5, 3.5)
-    )
-
-    image = ax.imshow(
-        log_values,
-        aspect="auto",
-    )
-
-    ax.set_xticks(
-        np.arange(len(flow_table.columns))
-    )
-    ax.set_xticklabels(
-        flow_table.columns,
-        rotation=45,
-        ha="right",
-    )
-
-    ax.set_yticks(
-        np.arange(len(flow_table.index))
-    )
-    ax.set_yticklabels(
-        flow_table.index
-    )
-
-    fig.colorbar(
-        image,
-        ax=ax,
-        label="log1p(total amount in USD)",
-    )
-
-    ax.set_xlabel("To account type")
-    ax.set_ylabel("From account type")
-
-    fig.tight_layout()
-
-    fig.savefig(
-        OUTPUT_PDF,
-        bbox_inches="tight",
-    )
-
-    plt.close(fig)
-
-
-if __name__ == "__main__":
-    main()

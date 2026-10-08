@@ -1,15 +1,24 @@
+"""
+Shared helpers for Fig. 2 (issue-category composition).
+
+Provides the issue-label categories, data loading, and USD conversion used by
+fig2_issue_categories.py. The functions for the earlier three-group
+(tertile) analysis are kept only because some helpers are shared; that
+analysis is not reported in the paper. This module is not run directly.
+"""
+
 import re
 import unicodedata
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from forex_python.converter import CurrencyRates
 from scipy.stats import kruskal
 from statsmodels.stats.multitest import multipletests
 from output_util import FIGURES_DIR
 
 from duckdb_util import database_engine
+from transaction_util import get_exchange_rates
 from transaction_util import KIND_TO_TYPE
 
 
@@ -148,18 +157,9 @@ def convert_expenses_to_usd(expenses):
         & expenses["amount_currency"].ne("NAN")
     ].copy()
 
-    converter = CurrencyRates()
-    rates = {}
-
-    for currency in expenses["amount_currency"].unique():
-        try:
-            rates[currency] = (
-                1.0
-                if currency == "USD"
-                else converter.get_rate(currency, "USD")
-            )
-        except Exception:
-            rates[currency] = np.nan
+    rates = get_exchange_rates(
+        expenses["amount_currency"].dropna().unique()
+    )
 
     expenses["amount_usd"] = (
         expenses["amount_value"]
@@ -563,7 +563,3 @@ def main():
     )
 
     run_kruskal_wallis(ratios)
-
-
-if __name__ == "__main__":
-    main()

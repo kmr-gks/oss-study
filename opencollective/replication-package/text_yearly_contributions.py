@@ -1,16 +1,13 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from forex_python.converter import CurrencyRates
-from output_util import FIGURES_DIR
+from output_util import TABLES_DIR
 
 from duckdb_util import database_engine
-from transaction_util import KIND_TO_TYPE
+from transaction_util import KIND_TO_TYPE, get_exchange_rates
 
 
 MONEY_TABLE = "public.collective_transactions"
 BASE_CURRENCY = "USD"
-OUTPUT_PDF = FIGURES_DIR / "Fig1.pdf"
 
 def load_contributions():
     engine = database_engine()
@@ -74,23 +71,9 @@ def convert_to_usd(df):
         df["amount_original"].gt(0)
     ].copy()
 
-    converter = CurrencyRates()
-    rates = {}
-
-    for currency in sorted(
+    rates = get_exchange_rates(
         df["amount_currency"].dropna().unique()
-    ):
-        try:
-            rates[currency] = (
-                1.0
-                if currency == BASE_CURRENCY
-                else converter.get_rate(
-                    currency,
-                    BASE_CURRENCY,
-                )
-            )
-        except Exception:
-            rates[currency] = np.nan
+    )
 
     df["exchange_rate_to_usd"] = (
         df["amount_currency"].map(rates)
@@ -144,47 +127,18 @@ def main():
             },
         )
     )
+    yearly.rename(
+        columns={"total_contributed_usd": "amount_usd"}
+    ).to_csv(
+        TABLES_DIR / "text_yearly_contributions.csv",
+        index=False,
+    )
+
     print(
         "Total: "
         f"{yearly['total_contributed_usd'].sum():,.2f} USD "
         f"({yearly['n_transactions'].sum():,} transactions)"
     )
-
-    fig, ax = plt.subplots(
-        figsize=(5, 3.5),
-        constrained_layout=True,
-    )
-
-    ax.plot(
-        yearly["year"],
-        yearly["total_contributed_usd"],
-        marker="o",
-        label="Yearly contribution amount",
-    )
-
-    ax.set_xlabel("Year")
-    ax.set_ylabel(
-        "Contribution amount in millions (USD)"
-    )
-
-    ax.yaxis.set_major_formatter(
-        lambda value, position:
-            f"{value / 1e6:.1f}"
-    )
-
-    ax.grid(
-        True,
-        alpha=0.3,
-    )
-
-    ax.legend()
-
-    fig.savefig(
-        OUTPUT_PDF,
-        bbox_inches="tight",
-    )
-
-    plt.close(fig)
 
 
 if __name__ == "__main__":

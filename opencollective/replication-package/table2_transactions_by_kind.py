@@ -1,5 +1,5 @@
 """
-TABLE III: Transaction Records by Kind
+Table 2: Transaction Records by Kind
 
 kind 別の取引件数と合計金額（USD）。
 金額は元の符号を保持する（CONTRIBUTION は正、EXPENSE / 各種手数料は負）ため、
@@ -33,7 +33,8 @@ if len(result) > TOP_N:
 
 result["Amount_USD"] = result["Amount_USD"] / 1e6
 
-result.to_csv(TABLES_DIR / "table_iii.csv", index=False)
+result = result.rename(columns={"Count": "count", "Amount_USD": "amount_musd"})
+result.to_csv(TABLES_DIR / "table2_transactions_by_kind.csv", index=False)
 
-print("TABLE III  (Amount は百万 USD、符号は資金の向きを示す)")
+print("Table 2  (amount in million USD; the sign shows the direction of the flow)")
 print(result.to_string(index=False, float_format=lambda x: f"{x:,.2f}"))

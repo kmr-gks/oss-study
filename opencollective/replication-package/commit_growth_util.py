@@ -1,9 +1,18 @@
+"""
+Shared helpers for Table 6 (commit growth by development spending).
+
+Provides expense loading, USD conversion, commit-window construction, and
+effect-size helpers used by table6_commit_growth_by_dev_spending.py and
+fig2_issue_categories.py. The functions for the earlier three-group
+(tertile) analysis are kept only because some helpers are shared; that
+analysis is not reported in the paper. This module is not run directly.
+"""
+
 import numpy as np
 import pandas as pd
-from forex_python.converter import CurrencyRates
 from scipy.stats import kruskal, mannwhitneyu
 from duckdb_util import database_engine
-from transaction_util import KIND_TO_TYPE
+from transaction_util import KIND_TO_TYPE, get_exchange_rates
 from output_util import TABLES_DIR
 
 
@@ -100,27 +109,7 @@ def load_expenses(engine):
 
 
 def fetch_exchange_rates_to_usd(currencies):
-    currency_rates = CurrencyRates()
-    exchange_rates = {}
-
-    for currency in sorted(currencies):
-        if currency == BASE_CURRENCY:
-            exchange_rates[currency] = 1.0
-            continue
-
-        try:
-            exchange_rates[currency] = (
-                currency_rates.get_rate(
-                    currency,
-                    BASE_CURRENCY,
-                )
-            )
-        except Exception as error:
-            print(
-                f"Warning: failed to get exchange rate "
-                f"{currency} -> USD: {error}"
-            )
-            exchange_rates[currency] = np.nan
+    exchange_rates = get_exchange_rates(currencies)
 
     print("\n===== Exchange rates to USD =====")
 
@@ -1232,7 +1221,3 @@ def main():
 
     finally:
         engine.dispose()
-
-
-if __name__ == "__main__":
-    main()

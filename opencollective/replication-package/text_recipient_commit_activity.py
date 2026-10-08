@@ -1,6 +1,7 @@
 import pandas as pd
 from duckdb_util import database_engine
 from output_util import TABLES_DIR
+from transaction_util import KIND_TO_TYPE
 
 WINDOW_MONTHS = 12
 
@@ -46,7 +47,7 @@ try:
     )
 
     payments = pd.read_sql(
-        """
+        f"""
         SELECT
             project_slug,
             to_account_slug,
@@ -54,6 +55,8 @@ try:
             created_at AS payment_created_at
         FROM public.collective_transactions
         WHERE kind = 'EXPENSE'
+          -- Keep only the paying side of each double-entry record.
+          AND type = '{KIND_TO_TYPE["EXPENSE"]}'
           AND to_account_type = 'INDIVIDUAL'
           AND is_development = true
           AND project_slug IS NOT NULL
@@ -246,10 +249,18 @@ try:
         result["Count"] / result["Count"].sum() * 100
     )
 
+    result = result.rename(
+        columns={"Category": "category", "Count": "count", "Percentage": "pct"}
+    )
+    # Some pandas versions name the value_counts index differently.
+    result = result.rename(columns={"index": "category"})
+
+    print("Commit activity of matched recipients (Section 4.2)")
+    print(result.to_string(index=False, float_format=lambda x: f"{x:.1f}"))
+
     result.to_csv(
-        TABLES_DIR / "table_vi.csv",
+        TABLES_DIR / "text_recipient_commit_activity.csv",
         index=False,
-        float_format="%.3f",
     )
 
 finally:

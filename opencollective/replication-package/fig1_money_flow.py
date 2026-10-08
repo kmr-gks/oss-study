@@ -1,13 +1,14 @@
 import matplotlib
 import numpy as np
 import matplotlib.pyplot as plt
-from output_util import FIGURES_DIR
+import pandas as pd
+from output_util import FIGURES_DIR, TABLES_DIR
 
-from fig2 import load_contributions, convert_to_usd
-from fig3 import load_expenses
+from money_flow_util import load_contributions, load_expenses, convert_to_usd
 
 
-OUTPUT_PDF = FIGURES_DIR / "rq2_money_flow.pdf"
+OUTPUT_PDF = FIGURES_DIR / "fig1_money_flow.pdf"
+OUTPUT_CSV = TABLES_DIR / "fig1_money_flow_amounts.csv"
 
 
 def build_flow_table(df):
@@ -45,6 +46,27 @@ def main():
         ("(a) CONTRIBUTION", contribution_table),
         ("(b) EXPENSE", expense_table),
     ]
+
+    # Underlying amounts of each heatmap cell (long format).
+    amounts = pd.concat(
+        [
+            table.stack()
+            .rename("amount_usd")
+            .rename_axis(["from_account_type", "to_account_type"])
+            .reset_index()
+            .assign(kind=kind)
+            for kind, table in [
+                ("CONTRIBUTION", contribution_table),
+                ("EXPENSE", expense_table),
+            ]
+        ],
+        ignore_index=True,
+    )
+    amounts = amounts[amounts["amount_usd"] > 0]
+    amounts[["kind", "from_account_type", "to_account_type", "amount_usd"]].to_csv(
+        OUTPUT_CSV,
+        index=False,
+    )
 
     log_tables = [
         np.log10(

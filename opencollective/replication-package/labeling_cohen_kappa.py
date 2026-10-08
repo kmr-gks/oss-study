@@ -1,5 +1,6 @@
 import pandas as pd
 from sklearn.metrics import cohen_kappa_score
+from output_util import TABLES_DIR
 
 # =========================
 # 設定
@@ -59,3 +60,10 @@ agreement_rate = (
 print("\n===== Simple agreement =====")
 print("Agreement rate:", agreement_rate)
 print("Agreement rate (%):", agreement_rate * 100)
+
+pd.DataFrame([{
+    "input_file": INPUT_FILE,
+    "n_records": len(df_valid),
+    "cohen_kappa": kappa,
+    "agreement_pct": agreement_rate * 100,
+}]).to_csv(TABLES_DIR / "labeling_cohen_kappa.csv", index=False)

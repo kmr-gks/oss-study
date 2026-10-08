@@ -3,7 +3,7 @@ import pandas as pd
 from scipy.stats import mannwhitneyu
 from duckdb_util import database_engine
 from output_util import TABLES_DIR
-from tableVIII import (
+from commit_growth_util import (
     PROJECT_COL,
     SIGNIFICANCE_LEVEL,
     add_expense_amount_usd,
@@ -67,21 +67,22 @@ def summarize_by_presence(df):
         .reset_index()
         .rename(
             columns={
-                DEV_PRESENCE_COL: "Group",
-                "growth_pct": "Growth(%)",
-                "mean_dev_exp": "Mean dev. exp.",
-                "median_dev_exp": "Median dev. exp.",
+                DEV_PRESENCE_COL: "group",
+                "N": "n",
+                "growth_pct": "median_growth_pct",
+                "mean_dev_exp": "mean_dev_expense_usd",
+                "median_dev_exp": "median_dev_expense_usd",
             }
         )
     )
 
     return summary[
         [
-            "Group",
-            "N",
-            "Growth(%)",
-            "Mean dev. exp.",
-            "Median dev. exp.",
+            "group",
+            "n",
+            "median_growth_pct",
+            "mean_dev_expense_usd",
+            "median_dev_expense_usd",
         ]
     ]
 
@@ -229,9 +230,8 @@ def analyze_window(
     )
 
     summary.to_csv(
-        TABLES_DIR / "table_viii_dev_presence.csv",
+        TABLES_DIR / "table6_commit_growth_by_dev_spending.csv",
         index=False,
-        float_format="%.3f",
     )
 
     test_result = test_growth_rate_between_presence_groups(
@@ -261,6 +261,26 @@ def main():
                 df_project_spending,
             )
             all_test_results.append(test_result)
+
+        pd.DataFrame(all_test_results).rename(
+            columns={
+                "Window months": "window_months",
+                "Group A": "group_a",
+                "Group B": "group_b",
+                "N A": "n_a",
+                "N B": "n_b",
+                "Median growth A": "median_growth_pct_a",
+                "Median growth B": "median_growth_pct_b",
+                "U statistic": "u_statistic",
+                "P-value": "p_value",
+                "Significant": "significant",
+                "Cliff's delta": "cliffs_delta",
+                "Effect size": "effect_size",
+            }
+        ).to_csv(
+            TABLES_DIR / "table6_commit_growth_test.csv",
+            index=False,
+        )
 
         print("\n===== Mann-Whitney U results =====")
         print(

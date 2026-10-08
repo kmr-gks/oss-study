@@ -1,5 +1,5 @@
 """
-TABLE IV: Transaction Statistics for Contributions and Expenses
+Table 3: Transaction Statistics for Contributions and Expenses
 
 CONTRIBUTION と EXPENSE について、件数・合計・平均・中央値を報告する。
 取引規模の比較が目的なので金額は絶対値で扱う。対向仕訳は
@@ -32,40 +32,43 @@ for kind in TARGET_KINDS:
 sub["amount_abs"] = sub["amount_usd"].abs()
 
 result = sub.groupby("kind").agg(
-    Count=("amount_abs", "count"),
-    Total_USD=("amount_abs", "sum"),
-    Mean_USD=("amount_abs", "mean"),
-    Median_USD=("amount_abs", "median"),
+    count=("amount_abs", "count"),
+    total_usd=("amount_abs", "sum"),
+    mean_usd=("amount_abs", "mean"),
+    median_usd=("amount_abs", "median"),
 ).T
 
 result = result.reindex(columns=[k for k in TARGET_KINDS if k in result.columns])
 
-result.to_csv(TABLES_DIR / "table_iv.csv")
+result.rename(columns=str.lower).rename_axis("metric").reset_index().to_csv(
+    TABLES_DIR / "table3_contribution_expense_stats.csv",
+    index=False,
+)
 
-print("TABLE IV")
+print("Table 3")
 print(result.to_string(float_format=lambda x: f"{x:,.2f}"))
 
 # --- Table III との整合性チェック -------------------------------------------
 
-table_iii_path = TABLES_DIR / "table_iii.csv"
-if table_iii_path.exists():
-    t3 = pd.read_csv(table_iii_path)
-    print("\n[整合性チェック: Table III vs Table IV]")
+table2_path = TABLES_DIR / "table2_transactions_by_kind.csv"
+if table2_path.exists():
+    t3 = pd.read_csv(table2_path)
+    print("\n[Consistency check: Table 2 vs Table 3]")
     for kind in TARGET_KINDS:
         row = t3[t3["kind"] == kind]
         if row.empty or kind not in result.columns:
             print(f"  {kind:<13} Table III 側に該当なし（Others に含まれている可能性）")
             continue
 
-        c3 = int(row["Count"].iloc[0])
-        a3 = abs(float(row["Amount_USD"].iloc[0])) * 1e6
-        c4 = int(result.loc["Count", kind])
-        a4 = float(result.loc["Total_USD", kind])
+        c3 = int(row["count"].iloc[0])
+        a3 = abs(float(row["amount_musd"].iloc[0])) * 1e6
+        c4 = int(result.loc["count", kind])
+        a4 = float(result.loc["total_usd", kind])
 
         ok_c = "OK" if c3 == c4 else "MISMATCH"
         ok_a = "OK" if abs(a3 - a4) < 1.0 else "MISMATCH"
         print(f"  {kind:<13} count    : {c3:,} vs {c4:,}  -> {ok_c}")
         print(f"  {kind:<13} |amount| : {a3:,.2f} vs {a4:,.2f}  -> {ok_a}")
 else:
-    print(f"\n[info] {table_iii_path} が見つからないため整合性チェックをスキップ。"
-          f" tableIII.py を先に実行してください。")
+    print(f"\n[info] {table2_path} not found; consistency check skipped."
+          f" Run table2_transactions_by_kind.py first.")

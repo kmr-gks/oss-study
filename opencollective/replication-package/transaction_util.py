@@ -18,16 +18,15 @@ import json
 from pathlib import Path
 
 import pandas as pd
-from forex_python.converter import CurrencyRates
 
-from duckdb_util import database_engine
+from duckdb_util import DATA_DIR, database_engine
 from output_util import TABLES_DIR
 
 BASE_CURRENCY = "USD"
 
 # 為替レートのキャッシュ先。両スクリプトが同一のレートを使い、
 # 再実行しても同じ数値が再現されるようにする。
-RATE_CACHE_PATH = Path(TABLES_DIR) / "exchange_rates.json"
+RATE_CACHE_PATH = Path(DATA_DIR) / "exchange_rates_to_usd.json"
 
 # kind ごとに残す type。
 # CONTRIBUTION は入ってきた金 (CREDIT)、EXPENSE は出ていった金 (DEBIT) を採用する。
@@ -43,6 +42,10 @@ KIND_TO_TYPE = {
 
 def _fetch_rates(currencies):
     """通貨コード -> USD レート。取得失敗は None（後段で除外）。"""
+    # Imported here so that runs that only use the cached rates
+    # (data/exchange_rates_to_usd.json) need neither forex-python
+    # nor an Internet connection.
+    from forex_python.converter import CurrencyRates
     converter = CurrencyRates()
     rates = {}
     for currency in sorted(currencies):
@@ -75,6 +78,23 @@ def _load_or_fetch_rates(currencies, refresh=False):
     with open(RATE_CACHE_PATH, "w", encoding="utf-8") as f:
         json.dump(rates, f, ensure_ascii=False, indent=2, sort_keys=True)
     return rates
+
+
+def get_exchange_rates(currencies, refresh=False):
+    """
+    Return {currency: rate to USD} from the shared cache
+    (data/exchange_rates_to_usd.json).
+
+    All scripts use this function so that every table, figure, and number
+    in the paper is computed with the same fixed exchange rates.
+    Currencies without a rate are returned as NaN and are excluded by the caller.
+    """
+    currencies = [str(c).strip().upper() for c in currencies if str(c).strip()]
+    rates = _load_or_fetch_rates(currencies, refresh=refresh)
+    return {
+        c: (float(r) if r is not None else float("nan"))
+        for c, r in rates.items()
+    }
 
 
 def _resolve_kind_to_type(df, verbose=True):

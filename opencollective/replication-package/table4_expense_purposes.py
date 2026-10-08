@@ -1,9 +1,9 @@
 import pandas as pd
-from forex_python.converter import CurrencyRates
 from sqlalchemy import bindparam, text
 from output_util import TABLES_DIR
 
 from duckdb_util import database_engine
+from transaction_util import get_exchange_rates
 
 
 df = pd.concat(
@@ -59,21 +59,9 @@ try:
         .str.upper()
     )
 
-    converter = CurrencyRates()
-    rates = {}
-
-    for currency in df["amount_currency"].dropna().unique():
-        try:
-            rates[currency] = (
-                1.0
-                if currency == "USD"
-                else converter.get_rate(currency, "USD")
-            )
-        except Exception as error:
-            print(
-                f"Warning: {currency} -> USD failed: {error}"
-            )
-            rates[currency] = None
+    rates = get_exchange_rates(
+        df["amount_currency"].dropna().unique()
+    )
 
     df["rate_to_usd"] = df["amount_currency"].map(rates)
 
@@ -131,6 +119,17 @@ try:
         ]
     ]
 
+    # Category names as used in the paper.
+    result["Category"] = result["Category"].replace({
+        "development": "Development",
+        "infra-subscription": "Infra & Subscription",
+        "marketing-events": "Marketing & Events",
+        "non-tech-activities": "Non-tech Activities",
+        "unknown": "Unknown",
+        "equipment": "Equipment",
+        "food-supplies": "Food & Supplies",
+    })
+
     print(
         result.to_string(
             index=False,
@@ -138,10 +137,16 @@ try:
         )
     )
 
-    result.to_csv(
-        TABLES_DIR / "table_v.csv",
+    result.rename(
+        columns={
+            "Category": "category",
+            "Count": "count",
+            "Count(%)": "count_pct",
+            "Amount(%)": "amount_pct",
+        }
+    ).to_csv(
+        TABLES_DIR / "table4_expense_purposes.csv",
         index=False,
-        float_format="%.2f",
     )
 
 finally:

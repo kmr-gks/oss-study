@@ -474,16 +474,29 @@ def main():
 
     table = format_tests_for_table(tests)
 
-    table.to_csv(
-        TABLES_DIR / "table_vii.csv",
+    # Full-precision test results (raw and Holm-adjusted p-values),
+    # so that "<.001" in the paper can be verified.
+    tests.to_csv(
+        TABLES_DIR / "table5_activity_tests_detail.csv",
         index=False,
-        float_format="%.3f",
     )
 
-    save_median_growth_plot(
-        growth,
-        FIGURES_DIR / "Fig4.pdf",
+    # Holm-adjusted p-values in the layout of Table 5 (unrounded).
+    table.rename(
+        columns={
+            "Metric": "metric",
+            "3 mo.": "holm_p_3_months",
+            "6 mo.": "holm_p_6_months",
+            "9 mo.": "holm_p_9_months",
+            "12 mo.": "holm_p_12_months",
+        }
+    ).to_csv(
+        TABLES_DIR / "table5_activity_tests.csv",
+        index=False,
     )
+
+    print("Table 5: Holm-adjusted p-values")
+    print(table.to_string(index=False, float_format=lambda x: f"{x:.4g}"))
 
 
 if __name__ == "__main__":
