@@ -1,10 +1,11 @@
 """
 Table 2: Transaction Records by Kind
 
-kind 別の取引件数と合計金額（USD）。
-金額は元の符号を保持する（CONTRIBUTION は正、EXPENSE / 各種手数料は負）ため、
-資金の向きがそのまま読める。対向仕訳は transaction_util 側で除去済みなので、
-同一の資金移動を二重に数えることはない。
+Number of transactions and total amount (USD) per transaction kind.
+Amounts keep their original sign (positive for CONTRIBUTION, negative for
+EXPENSE and fees), so the sign shows the direction of the flow. Counterpart
+entries of double-entry records are removed in transaction_util, so no
+transfer is counted twice.
 """
 
 import pandas as pd
@@ -12,7 +13,7 @@ import pandas as pd
 from output_util import TABLES_DIR
 from transaction_util import load_transactions
 
-TOP_N = 5  # これより下位の kind は "Others" にまとめる
+TOP_N = 5  # kinds below the top N are grouped as "Others"
 
 df = load_transactions()
 

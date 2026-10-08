@@ -3,10 +3,29 @@
 This package contains the data and Python scripts needed to reproduce every table, figure, and number reported in the paper
 *Beyond Receiving Funding: How Financial Allocation Relates to Development and Maintenance in Open Source Projects* (QuASoQ 2026).
 
+## Package structure
+
+```text
+replication-package/
+├── README.md
+├── requirements.txt
+├── table2_*.py … table6_*.py      # scripts for Tables 2–6
+├── fig1_*.py, fig2_*.py           # scripts for Figs. 1–2
+├── text_*.py                      # scripts for numbers reported in the text
+├── labeling_*.py                  # inter-rater agreement and LLM accuracy
+├── *_util.py                      # shared modules (Section 7)
+├── data1.csv … data4.csv          # labeling data (Section 4.2)
+├── data/                          # Parquet data and fixed exchange rates (Section 4.1)
+├── prompts/                       # LLM prompts (Section 4.3)
+└── results/
+    ├── tables/                    # CSV outputs
+    └── figures/                   # PDF outputs
+```
+
 ## 1. Requirements
 
 * Python 3
-* The packages listed in `requirements.txt`:
+* The packages listed in `requirements.txt` (`forex-python` is only needed if exchange rates have to be retrieved; see Section 6):
 
 ```bash
 python3 -m pip install -r requirements.txt
@@ -42,7 +61,8 @@ python3 labeling_llm_accuracy.py
 ```
 
 Each script prints its result to the terminal and writes it to `results/tables/` (CSV) or `results/figures/` (PDF).
-Existing files with the same names are overwritten.
+Existing files with the same names are overwritten. The `results/` directory of this package already contains the outputs
+produced by running all scripts above, so the reported values can be checked without running anything.
 
 ## 3. Correspondence between the paper and the scripts
 

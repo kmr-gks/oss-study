@@ -1,12 +1,12 @@
 """
 Table 3: Transaction Statistics for Contributions and Expenses
 
-CONTRIBUTION と EXPENSE について、件数・合計・平均・中央値を報告する。
-取引規模の比較が目的なので金額は絶対値で扱う。対向仕訳は
-transaction_util 側で除去済みであり、フィルタ後は各 kind の符号が
-揃っているため、絶対値化によって向きの異なる取引が混ざることはない。
+Count, total, mean, and median amount of CONTRIBUTION and EXPENSE records.
+Amounts are compared as absolute values. Counterpart entries of double-entry
+records are removed in transaction_util, so all records of a kind have the
+same sign and taking absolute values does not mix flows in opposite directions.
 
-件数と金額の絶対値は Table III と一致する（末尾で自動チェック）。
+The counts and absolute totals must equal those in Table 2 (checked at the end).
 """
 
 import pandas as pd
@@ -20,14 +20,14 @@ df = load_transactions()
 
 sub = df[df["kind"].isin(TARGET_KINDS)].copy()
 
-# フィルタ後に符号の乱れがないことを確認しておく
+# Check that all records of a kind have the same sign after filtering
 for kind in TARGET_KINDS:
     signs = sub.loc[sub["kind"] == kind, "amount_usd"].apply(
         lambda x: 1 if x > 0 else (-1 if x < 0 else 0)
     ).unique()
     nonzero = [s for s in signs if s != 0]
     if len(nonzero) > 1:
-        print(f"[WARN] {kind} に正負が混在しています: {sorted(nonzero)}")
+        print(f"[WARN] {kind} has both positive and negative amounts: {sorted(nonzero)}")
 
 sub["amount_abs"] = sub["amount_usd"].abs()
 
@@ -48,7 +48,7 @@ result.rename(columns=str.lower).rename_axis("metric").reset_index().to_csv(
 print("Table 3")
 print(result.to_string(float_format=lambda x: f"{x:,.2f}"))
 
-# --- Table III との整合性チェック -------------------------------------------
+# --- Consistency check against Table 2 ------------------------------------------
 
 table2_path = TABLES_DIR / "table2_transactions_by_kind.csv"
 if table2_path.exists():
@@ -57,7 +57,7 @@ if table2_path.exists():
     for kind in TARGET_KINDS:
         row = t3[t3["kind"] == kind]
         if row.empty or kind not in result.columns:
-            print(f"  {kind:<13} Table III 側に該当なし（Others に含まれている可能性）")
+            print(f"  {kind:<13} not found in Table 2 (it may be included in Others)")
             continue
 
         c3 = int(row["count"].iloc[0])

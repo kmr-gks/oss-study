@@ -1,17 +1,19 @@
 """
-Open Collective の取引データを読み込み、Table III / Table IV で共通の前処理を行う。
+Loads Open Collective transactions and applies the preprocessing shared by
+all scripts.
 
-主な処理:
-  1. 通貨コードの正規化（カラム側で行い、辞書引きのキー不一致を防ぐ）
-  2. 為替レートの取得とキャッシュ（両表で同一のレートを使うため）
-  3. 複式簿記の対向仕訳の除去（kind ごとに片側の type だけを残す）
+Main steps:
+  1. Normalize currency codes (so that exchange-rate lookups match).
+  2. Convert amounts to USD with the fixed rates in data/exchange_rates_to_usd.json.
+  3. Remove the counterpart entries of double-entry records
+     (keep only one type per kind).
 
-複式簿記について:
-  Open Collective の台帳は、1つの資金移動に対して支払側の DEBIT 行と
-  受取側の CREDIT 行を記録する。取引の双方が本データセットに含まれる場合
-  （collective 間の移転など）は両方の行が入るため、そのまま集計すると
-  同じ資金移動を二重に数えてしまう。そこで kind ごとに、
-  当該取引を代表する側の type だけを残す。
+Double-entry records:
+  The Open Collective ledger records each transfer as a DEBIT entry on the
+  paying side and a CREDIT entry on the receiving side. When both sides are
+  in the dataset (e.g., transfers between collectives), counting all rows
+  would count the same transfer twice. Therefore, for each kind, only the
+  type that represents the transaction is kept.
 """
 
 import json
@@ -24,13 +26,13 @@ from output_util import TABLES_DIR
 
 BASE_CURRENCY = "USD"
 
-# 為替レートのキャッシュ先。両スクリプトが同一のレートを使い、
-# 再実行しても同じ数値が再現されるようにする。
+# Fixed exchange rates shared by all scripts, so that re-running them
+# reproduces the same values.
 RATE_CACHE_PATH = Path(DATA_DIR) / "exchange_rates_to_usd.json"
 
-# kind ごとに残す type。
-# CONTRIBUTION は入ってきた金 (CREDIT)、EXPENSE は出ていった金 (DEBIT) を採用する。
-# 未登録の kind は多数派の type を自動採用し、警告を出す（要目視確認）。
+# Type kept for each kind.
+# CONTRIBUTION: money received (CREDIT); EXPENSE: money paid (DEBIT).
+# For kinds not listed here, the majority type is used and a warning is printed.
 KIND_TO_TYPE = {
     "CONTRIBUTION": "CREDIT",
     "EXPENSE": "DEBIT",
@@ -41,7 +43,7 @@ KIND_TO_TYPE = {
 
 
 def _fetch_rates(currencies):
-    """通貨コード -> USD レート。取得失敗は None（後段で除外）。"""
+    """Return {currency: rate to USD}; None if the rate cannot be retrieved (excluded later)."""
     # Imported here so that runs that only use the cached rates
     # (data/exchange_rates_to_usd.json) need neither forex-python
     # nor an Internet connection.
@@ -57,7 +59,7 @@ def _fetch_rates(currencies):
 
 
 def _load_or_fetch_rates(currencies, refresh=False):
-    """キャッシュがあれば読み、なければ取得して保存する。"""
+    """Read the rates from the file; retrieve and add rates for currencies that are missing."""
     currencies = sorted(set(currencies))
 
     if RATE_CACHE_PATH.exists() and not refresh:
@@ -65,13 +67,13 @@ def _load_or_fetch_rates(currencies, refresh=False):
             cached = json.load(f)
         missing = [c for c in currencies if c not in cached]
         if not missing:
-            print(f"[rates] キャッシュを使用: {RATE_CACHE_PATH}")
+            print(f"[rates] Using fixed rates: {RATE_CACHE_PATH}")
             return cached
-        print(f"[rates] キャッシュに未登録の通貨 {len(missing)} 件を追加取得")
+        print(f"[rates] Retrieving rates for {len(missing)} currencies not in the file")
         cached.update(_fetch_rates(missing))
         rates = cached
     else:
-        print("[rates] 為替レートを取得")
+        print("[rates] Retrieving exchange rates")
         rates = _fetch_rates(currencies)
 
     RATE_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -98,7 +100,7 @@ def get_exchange_rates(currencies, refresh=False):
 
 
 def _resolve_kind_to_type(df, verbose=True):
-    """kind ごとに残す type を決める。未登録の kind は多数派を採用。"""
+    """Decide the type kept for each kind; use the majority type for unlisted kinds."""
     mapping = dict(KIND_TO_TYPE)
 
     for kind in df["kind"].dropna().unique():
@@ -111,20 +113,21 @@ def _resolve_kind_to_type(df, verbose=True):
         mapping[kind] = chosen
         if verbose:
             share = counts.max() / counts.sum() * 100
-            print(f"[WARN] kind='{kind}' は KIND_TO_TYPE に未登録。"
-                  f"多数派の '{chosen}' を採用 ({share:.1f}%)。要確認。")
+            print(f"[WARN] kind='{kind}' is not in KIND_TO_TYPE; "
+                  f"using the majority type '{chosen}' ({share:.1f}%).")
 
     return mapping
 
 
 def load_transactions(refresh_rates=False, verbose=True):
     """
-    前処理済みの取引データを返す。
+    Return the preprocessed transactions.
 
-    返り値の DataFrame は以下のカラムを持つ:
+    The returned DataFrame has the columns:
         kind, type, amount_currency, amount_value, exchange_rate, amount_usd
 
-    amount_usd は元の符号を保持する（CONTRIBUTION は正、EXPENSE は負）。
+    amount_usd keeps the original sign (positive for CONTRIBUTION,
+    negative for EXPENSE).
     """
     engine = database_engine()
     raw = pd.read_sql(
@@ -139,23 +142,23 @@ def load_transactions(refresh_rates=False, verbose=True):
     n_raw = len(raw)
     df = raw.copy()
 
-    # --- 型と表記の正規化 ---
+    # --- Normalize types and notation ---
     df["kind"] = df["kind"].astype("string").str.strip().str.upper()
     df["type"] = df["type"].astype("string").str.strip().str.upper()
     df["amount_currency"] = df["amount_currency"].astype("string").str.strip().str.upper()
     df["amount_value"] = pd.to_numeric(df["amount_value"], errors="coerce")
 
-    # --- NULL 除外 ---
+    # --- Drop NULL values ---
     df = df.dropna(subset=["amount_value", "amount_currency", "kind", "type"])
     n_after_null = len(df)
 
-    # --- 為替換算 ---
+    # --- Convert to USD ---
     rates = _load_or_fetch_rates(df["amount_currency"].unique(), refresh=refresh_rates)
     df["exchange_rate"] = df["amount_currency"].map(rates)
 
     missing = df[df["exchange_rate"].isna()]
     if verbose and not missing.empty:
-        print("[WARN] 為替レートを取得できなかった通貨:")
+        print("[WARN] Currencies without an exchange rate (excluded):")
         print(missing.groupby("amount_currency").size().to_string())
 
     df = df.dropna(subset=["exchange_rate"])
@@ -163,9 +166,9 @@ def load_transactions(refresh_rates=False, verbose=True):
 
     df["amount_usd"] = df["amount_value"] * df["exchange_rate"]
 
-    # --- 対向仕訳の除去 ---
+    # --- Remove counterpart entries of double-entry records ---
     if verbose:
-        print("\n[type 内訳（フィルタ前）]")
+        print("\n[Records by kind and type (before filtering)]")
         breakdown = (
             df.groupby(["kind", "type"])
               .agg(Count=("amount_usd", "size"), Total_USD=("amount_usd", "sum"))
@@ -182,13 +185,13 @@ def load_transactions(refresh_rates=False, verbose=True):
     n_after_type = len(df)
 
     if verbose:
-        print("\n[除外サマリ]")
-        print(f"  取得行数          : {n_raw:,}")
-        print(f"  NULL 除外後       : {n_after_null:,}  (-{n_raw - n_after_null:,})")
-        print(f"  レート除外後      : {n_after_rate:,}  (-{n_after_null - n_after_rate:,})")
-        print(f"  対向仕訳の除去後  : {n_after_type:,}  (-{n_after_rate - n_after_type:,})")
+        print("\n[Exclusion summary]")
+        print(f"  Rows loaded                 : {n_raw:,}")
+        print(f"  After dropping NULLs        : {n_after_null:,}  (-{n_raw - n_after_null:,})")
+        print(f"  After dropping missing rates: {n_after_rate:,}  (-{n_after_null - n_after_rate:,})")
+        print(f"  After removing counterparts : {n_after_type:,}  (-{n_after_rate - n_after_type:,})")
         if not dropped.empty:
-            print("\n  除去した対向仕訳の内訳:")
+            print("\n  Removed counterpart entries:")
             print(dropped.groupby(["kind", "type"])
                          .agg(Count=("amount_usd", "size"), Total_USD=("amount_usd", "sum"))
                          .to_string(float_format=lambda x: f"{x:,.2f}"))

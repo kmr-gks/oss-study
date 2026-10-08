@@ -3,7 +3,7 @@ from sklearn.metrics import cohen_kappa_score
 from output_util import TABLES_DIR
 
 # =========================
-# 設定
+# Settings
 # =========================
 
 INPUT_FILE = "data2.csv"
@@ -17,7 +17,7 @@ required_cols = {AUTHOR1_COL, AUTHOR2_COL}
 missing_cols = required_cols - set(df.columns)
 
 if missing_cols:
-    raise ValueError(f"必要な列がありません: {missing_cols}")
+    raise ValueError(f"Missing required columns: {missing_cols}")
 
 df[AUTHOR1_COL] = (
     df[AUTHOR1_COL]
